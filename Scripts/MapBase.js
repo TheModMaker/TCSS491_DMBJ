@@ -34,7 +34,7 @@ var BLOCK_WALL_UDR = 0xB + BLOCK_WALL;
 var BLOCK_WALL_LDR = 0x7 + BLOCK_WALL;
 var BLOCK_WALL_ULDR = 0xF + BLOCK_WALL;
 // Defines a wall that cannot receive a portal.
-var BLOCK_NO_PORTAL_CHAR = '=';
+var BLOCK_NO_WALL_CHAR = '=';
 var BLOCK_NO_WALL = 0x0 + BLOCK_WALL_ULDR + 1;
 var BLOCK_NO_WALL_U = 0x8 + BLOCK_NO_WALL;
 var BLOCK_NO_WALL_L = 0x4 + BLOCK_NO_WALL;
@@ -54,7 +54,6 @@ var BLOCK_NO_WALL_ULDR = 0xF + BLOCK_NO_WALL;
 
 // Defines the characters that will kill the player.
 var BLOCK_KILL_CHAR = "~`!@#$%^&()[{]}\\|;:'\",<.>/?".split("");
-var BLOCK_NO_WALL_ULDR = BLOCK_NO_WALL_ULDR;
 
 // Contains the width/height of blocks on the map.
 var BLOCK_WIDTH = 16;
@@ -146,26 +145,27 @@ function Map() {
 
 	// Gets the wall type for the given index.
 	function WallType(wall, lines, x, y) {
-		var u = !(y === 0 || lines[y - 1][x] === BLOCK_WALL_CHAR);
-		var d = !(y === lines.length - 1 || lines[y + 1][x] === BLOCK_WALL_CHAR);
-		var l = !(x === 0 || lines[y][x - 1] === BLOCK_WALL_CHAR);
-		var r = !(x === lines[y].length - 1 || lines[y][x + 1] === BLOCK_WALL_CHAR);
+		var u = !(y === 0 || lines[y - 1][x] === BLOCK_WALL_CHAR || lines[y - 1][x] === BLOCK_NO_WALL_CHAR);
+		var d = !(y === lines.length - 1 || lines[y + 1][x] === BLOCK_WALL_CHAR || lines[y + 1][x] === BLOCK_NO_WALL_CHAR);
+		var l = !(x === 0 || lines[y][x - 1] === BLOCK_WALL_CHAR || lines[y][x - 1] === BLOCK_NO_WALL_CHAR);
+		var r = !(x === lines[y].length - 1 || lines[y][x + 1] === BLOCK_WALL_CHAR || lines[y][x + 1] === BLOCK_NO_WALL_CHAR);
 
 		return wall + (u << 3) + (l << 2) + (d << 1) + (r);
 	}
 
 	// Compile the lines into the object.
-	for (var y = 0; y < level.length; y++) {
-		var line = level[y];
+	var lines = level.slice(0);
+	for (var y = 0; y < lines.length; y++) {
+		var line = lines[y];
 		var ret = [];
 		for (var x = 0; x < line.length; x++) {
 			var c = line[x];
 			if (c === BLOCK_AIR_CHAR) {
 				ret[x] = BLOCK_AIR;
 			} else if (c === BLOCK_WALL_CHAR) {
-				ret[x] = WallType(BLOCK_WALL, level, x, y);
-			} else if (c === BLOCK_NO_PORTAL_CHAR) {
-				ret[x] = WallType(BLOCK_NO_WALL, level, x, y);
+				ret[x] = WallType(BLOCK_WALL, lines, x, y);
+			} else if (c === BLOCK_NO_WALL_CHAR) {
+				ret[x] = WallType(BLOCK_NO_WALL, lines, x, y);
 			} else if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
 				ret[x] = kills[c];
 			} else if (c === BLOCK_START_CHAR) {
@@ -201,11 +201,18 @@ function Map() {
 	}
 
 	this.draw = function(assets, x, y) {
-		for (var j = 0; j < level.length; j++) {
+		var minX = Math.max(0, Math.floor(x / BLOCK_WIDTH));
+		var maxX = Math.min(level[0].length, Math.ceil((x + CANVAS.width) / BLOCK_WIDTH));
+		var minY = Math.max(0, Math.floor(y / BLOCK_WIDTH));
+		var maxY = Math.min(level.length, Math.ceil((y + CANVAS.height) / BLOCK_WIDTH));
+
+		for (var j = minY; j < maxY; j++) {
 			var row = level[j];
-			for (var i = 0; i < row.length; i++) {
-				var img = assets[row[i]];
-				img.draw(BLOCK_WIDTH * i - x, BLOCK_WIDTH * j - y);
+			for (var i = minX; i < maxX; i++) {
+				if (row[i] !== BLOCK_AIR) {
+					var img = assets[row[i]];
+					img.draw(BLOCK_WIDTH * i - x, BLOCK_WIDTH * j - y);
+				}
 			}
 		}
 	};
