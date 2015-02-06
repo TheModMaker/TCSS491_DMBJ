@@ -64,7 +64,8 @@ function AssetManager(paths) {
 				imgAsset.width = this.width;
 				imgAsset.height = this.height;
 
-				console.log(msg + " " + name);
+				if (DEBUG)
+					console.log(msg + " " + name);
 				count++;
 				if (isDone() && typeof onAssetLoad === "function") {
 					onAssetLoad();
@@ -91,11 +92,7 @@ function AssetManager(paths) {
 }
 
 ASSETS = new AssetManager(CreateAsset
-		("wall", "Images/Wall.jpg", "img")
-		("walln", "Images/WallsNo.jpg", "img")
-		("air", "Images/Air.jpg", "img")
-		("lava", "Images/lava.jpg", "img")
-		("star", "Images/star.jpg", "img")
+		("level", "Images/level.png", "img")
 		("us", "Images/dmbj.png", "img")
 		("screens", "Images/screens.png", "img")
 		.create());

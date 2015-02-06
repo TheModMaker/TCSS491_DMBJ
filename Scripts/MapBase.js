@@ -3,31 +3,58 @@
 // MapBase.js - Defines interaction with the main game map.
 //
 // Load Dependencies - <none>
-// Use  Dependencies - <none>
+// Use  Dependencies - jQuery
 //
 
 
 // Defines a block that contains nothing.
 var BLOCK_AIR_CHAR = ' ';
-var BLOCK_AIR = BLOCK_AIR_CHAR;
-// Defines a normal wall.
-var BLOCK_WALL_CHAR = '-';
-var BLOCK_WALL = BLOCK_WALL_CHAR;
-// Defines a wall that cannot receive a portal.
-var BLOCK_NO_PORTAL_CHAR = '=';
-var BLOCK_NO_PORTAL = BLOCK_NO_PORTAL_CHAR;
+var BLOCK_AIR = 0;
 // Defines the end of the map.
 var BLOCK_END_CHAR = '*';
-var BLOCK_END = BLOCK_END_CHAR;
+var BLOCK_END = 1;
 // Defines the start of the map.
 var BLOCK_START_CHAR = '+';
+// Defines a normal wall.
+var BLOCK_WALL_CHAR = '-';
+var BLOCK_WALL = 0x0 + 2;
+var BLOCK_WALL_U = 0x8 + BLOCK_WALL;
+var BLOCK_WALL_L = 0x4 + BLOCK_WALL;
+var BLOCK_WALL_D = 0x2 + BLOCK_WALL;
+var BLOCK_WALL_R = 0x1 + BLOCK_WALL;
+var BLOCK_WALL_UL = 0xC + BLOCK_WALL;
+var BLOCK_WALL_UD = 0xA + BLOCK_WALL;
+var BLOCK_WALL_UR = 0x9 + BLOCK_WALL;
+var BLOCK_WALL_LD = 0x6 + BLOCK_WALL;
+var BLOCK_WALL_LR = 0x5 + BLOCK_WALL;
+var BLOCK_WALL_DR = 0x3 + BLOCK_WALL;
+var BLOCK_WALL_ULD = 0xE + BLOCK_WALL;
+var BLOCK_WALL_ULR = 0xD + BLOCK_WALL;
+var BLOCK_WALL_UDR = 0xB + BLOCK_WALL;
+var BLOCK_WALL_LDR = 0x7 + BLOCK_WALL;
+var BLOCK_WALL_ULDR = 0xF + BLOCK_WALL;
+// Defines a wall that cannot receive a portal.
+var BLOCK_NO_PORTAL_CHAR = '=';
+var BLOCK_NO_WALL = 0x0 + BLOCK_WALL_ULDR + 1;
+var BLOCK_NO_WALL_U = 0x8 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_L = 0x4 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_D = 0x2 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_R = 0x1 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_UL = 0xC + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_UD = 0xA + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_UR = 0x9 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_LD = 0x6 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_LR = 0x5 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_DR = 0x3 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_ULD = 0xE + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_ULR = 0xD + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_UDR = 0xB + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_LDR = 0x7 + BLOCK_NO_WALL;
+var BLOCK_NO_WALL_ULDR = 0xF + BLOCK_NO_WALL;
 
 // Defines the characters that will kill the player.
 var BLOCK_KILL_CHAR = "~`!@#$%^&()[{]}\\|;:'\",<.>/?".split("");
-var BLOCK_KILL = BLOCK_KILL_CHAR[0];
-
-// Defines the solid blocks.
-var BLOCK_SOLID = [BLOCK_WALL, BLOCK_NO_PORTAL];
+var BLOCK_NO_WALL_ULDR = BLOCK_NO_WALL_ULDR;
 
 // Contains the width/height of blocks on the map.
 var BLOCK_WIDTH = 16;
@@ -41,6 +68,8 @@ var BLOCK_WIDTH = 16;
 function MapSection(map) {
 	this.x = 0;
 	this.y = 0;
+
+	this.kills = [];
 
 	this.lines = map.split("\n");
 	if (this.lines[0] === "")
@@ -69,12 +98,15 @@ function MapSection(map) {
 function Map() {
 	var args = arguments;
 	var level = [];
+	var kills = [];
 	(function toLines() {
 		// Store the parts into an [y][x] array by it's relative position.
 		var sections = [];
 		for (var i = 0; i < args.length; i++) {
 			var x = args[i].x;
 			var y = args[i].y;
+
+			$.extend(kills, args[i].kills);
 
 			sections[y] = sections[y] || [];
 			sections[y][x] = args[i];
@@ -112,49 +144,54 @@ function Map() {
 		}
 	})();
 
-	// Converts a string line into an array object.
-	var map = this;
-	function compile(line, y) {
-		var ret = [];
-		for (var i = 0; i < line.length; i++) {
-			var c = line[i];
-			if (c === BLOCK_AIR_CHAR) {
-				ret[i] = BLOCK_AIR;
-			} else if (c === BLOCK_WALL_CHAR) {
-				ret[i] = BLOCK_WALL;
-			} else if (c === BLOCK_NO_PORTAL_CHAR) {
-				ret[i] = BLOCK_NO_PORTAL;
-			} else if (c === BLOCK_START_CHAR) {
-				ret[i] = BLOCK_AIR;
+	// Gets the wall type for the given index.
+	function WallType(wall, lines, x, y) {
+		var u = !(y === 0 || lines[y - 1][x] === BLOCK_WALL_CHAR);
+		var d = !(y === lines.length - 1 || lines[y + 1][x] === BLOCK_WALL_CHAR);
+		var l = !(x === 0 || lines[y][x - 1] === BLOCK_WALL_CHAR);
+		var r = !(x === lines[y].length - 1 || lines[y][x + 1] === BLOCK_WALL_CHAR);
 
-				if (DEBUG) {
-					if (map.startX !== undefined)
-						console.log("Duplicate start position.");
-				}
-
-				map.startX = i * BLOCK_WIDTH;
-				map.startY = (y - 1) * BLOCK_WIDTH;
-			} else if (c === BLOCK_END_CHAR) {
-				ret[i] = BLOCK_END;
-
-				if (DEBUG) {
-					if (map.endX !== undefined)
-						console.log("Duplicate end position.");
-				}
-				
-				map.endX = i * BLOCK_WIDTH;
-				map.endY = y * BLOCK_WIDTH;
-			} else if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
-				ret[i] = BLOCK_KILL;
-			}
-		}
-
-		return ret;
+		return wall + (u << 3) + (l << 2) + (d << 1) + (r);
 	}
 
 	// Compile the lines into the object.
-	for (var i = 0; i < level.length; i++) {
-		level[i] = compile(level[i], i);
+	for (var y = 0; y < level.length; y++) {
+		var line = level[y];
+		var ret = [];
+		for (var x = 0; x < line.length; x++) {
+			var c = line[x];
+			if (c === BLOCK_AIR_CHAR) {
+				ret[x] = BLOCK_AIR;
+			} else if (c === BLOCK_WALL_CHAR) {
+				ret[x] = WallType(BLOCK_WALL, level, x, y);
+			} else if (c === BLOCK_NO_PORTAL_CHAR) {
+				ret[x] = WallType(BLOCK_NO_WALL, level, x, y);
+			} else if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
+				ret[x] = kills[c];
+			} else if (c === BLOCK_START_CHAR) {
+				ret[x] = BLOCK_AIR;
+
+				if (DEBUG) {
+					if (this.startX !== undefined)
+						console.log("Duplicate start position.");
+				}
+
+				this.startX = x * BLOCK_WIDTH;
+				this.startY = (y - 1) * BLOCK_WIDTH;
+			} else if (c === BLOCK_END_CHAR) {
+				ret[x] = BLOCK_END;
+
+				if (DEBUG) {
+					if (this.endX !== undefined)
+						console.log("Duplicate end position.");
+				}
+				
+				this.endX = x * BLOCK_WIDTH;
+				this.endY = y * BLOCK_WIDTH;
+			}
+		}
+
+		level[y] = ret;
 	}
 	if (DEBUG) {
 		if (map.startX === undefined)
@@ -177,12 +214,12 @@ function Map() {
 	this.isSolid = function(x, y) {
 		if (x < 0 || y < 0 || y >= level.length || x >= level[y])
 			return false;
-		else if (level[y][x] === BLOCK_KILL)
+		else if (level[y][x] >= BLOCK_NO_WALL_ULDR)
 			return 1;
 		else if (level[y][x] === BLOCK_END)
 			return 2;
 		else
-			return (BLOCK_SOLID.indexOf(level[y][x]) != -1);
+			return (level[y][x] !== BLOCK_AIR);
 	};
 
 	this.height = level.length * BLOCK_WIDTH;

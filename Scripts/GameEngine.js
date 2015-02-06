@@ -145,15 +145,11 @@ var ENGINE = new (function GameEngine() {
     };
 
     onAssetLoad = function() {
-        function helper(name) {
-            var img = ASSETS[name];
-            var frames = new SimpleFrames(img.width, img.width, 1, 1, 1);
-            var sheet = new SpriteSheet(img, frames);
-            return sheet[0];
-        }
 
-        var assets = {"-": helper("wall"), "~": helper("lava"), "*": helper("star"), "=": helper("walln"), " ": helper("air") };
-        MAPS.setAssets(assets);
+        var img = ASSETS["level"];
+        var frames = SimpleFrames(img.width, img.height, 64, 8, 8);
+        var sheet = new SpriteSheet(img, frames);
+        MAPS.setAssets(sheet);
 
         cScreen = new TitleScreen();
 
