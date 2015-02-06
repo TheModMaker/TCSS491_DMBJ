@@ -2,25 +2,96 @@
 //
 // Graphics.js - Defines graphics components for the game.
 //
-// Depends on - jQuery
+// Load Dependencies - jQuery
+// Use  Dependencies - <none>
 //
-var canvas = null;
-var context = null;
-var animations = null;
 
-window.requestAnimFrame = (function () {
-    return window.requestAnimationFrame ||
+// Example animation usage:
+(function() {
+	// Get an img asset from the assets.
+	var img = ASSETS["us"];
+	// Create the frame info for the image.
+    var frames = SimpleFrames(img.width, img.height, 36, 9, 4);
+    // Create a sprite sheet that allows rendering part of an image.
+    var sheet = new SpriteSheet(img, frames);
+    // Create an animation that defines a sequence of frames to draw.
+    var anim = new Animation(sheet, 1, 8, 0.1, true);
+    // Create an animation set that holds all the animations for an object.
+    var set = new AnimationSet(anim);
+
+    // Register the animation set to the animation manager.
+    ANIMATIONS.play(set);
+});
+
+var CANVAS = null;
+var CONTEXT = null;
+var ANIMATIONS = null;
+
+window.requestAnimFrame = (window.requestAnimationFrame ||
             window.webkitRequestAnimationFrame ||
             window.mozRequestAnimationFrame ||
             window.oRequestAnimationFrame ||
             window.msRequestAnimationFrame ||
-            function (/* function */ callback, /* DOMElement */ element) {
+            function (callback) {
                 window.setTimeout(callback, 1000 / 60);
-            };
-})();
+            });
 
-// Constructor, defines a SpriteSheet wrapper for an image.
-// - img : The <img> tag that contins the image.
+// Helper function that returns the max element using the given selector.
+// - data : The input array to search.
+// - func : The selector function.
+function MaxSel(data, func) {
+	func = func || function(data) { return data; };
+	if (!data || data.length === 0) {
+		return;
+	}
+
+	var reti = 0;
+	var ret = func(data[0]);
+	for (var i = 1; i < data.length; i++) {
+		var d = func(data[i]);
+		if (ret < d) {
+			reti = i;
+			ret = d;
+		}
+	}
+
+	return data[reti];
+}
+
+// Constructor, defines a frame in the SpriteSheet.
+// - x : The x-position of the frame.
+// - y : The y-position of the frame.
+// - width : The width the frame.
+// - height : The height of the frame.
+// - offsetX : The x-offset of the frame from the base.
+// - offsetY : The y-offset of the frame from the base.
+function Frame(x, y, width, height, offsetX, offsetY) {
+	this.x = x;
+	this.y = y;
+	this.width = width;
+	this.height = height;
+	this.offsetX = offsetX || 0;
+	this.offsetY = offsetY || 0;
+
+	this.draw = function(img, x, y, w, h) {
+		CONTEXT.drawImage(
+			img, 
+			this.x, this.y,
+			this.width, this.height,
+			x + this.offsetX, y + this.offsetY,
+			this.width * w, this.height * h);
+
+		if (DEBUG) {
+			CONTEXT.beginPath();
+			CONTEXT.lineWidth = "1";
+			CONTEXT.strokeStyle = "red";
+			CONTEXT.rect(x + this.offsetX, y + this.offsetY, this.width * w, this.height * h); 
+			CONTEXT.stroke();
+		}
+	};
+}
+
+// Creates an array of frames using the given arguments.
 // - count : the number of frames in the image.
 // - widthCount : The number of frames wide.
 // - heightCount : The number of frames high.
@@ -28,40 +99,121 @@ window.requestAnimFrame = (function () {
 // - frameHeight : The height of a frame.
 // - offsetWidth : The x offest of the start.
 // - offsetHeight : The y offest of the start.
+function SimpleFrames(width, height, count, widthCount, heightCount, sepWidth, sepHeight, offsetWidth, offsetHeight, frameWidth, frameHeight) {
+	offsetWidth = offsetWidth || 0;
+	offsetHeight = offsetHeight || 0;
+	sepWidth = sepWidth || 0;
+	sepHeight = sepHeight || 0;
+	frameWidth = frameWidth || ((width - offsetWidth - sepWidth * (widthCount - 1)) / widthCount);
+	frameHeight = frameHeight || ((height - offsetHeight- sepHeight * (heightCount - 1)) / heightCount);
+
+	var frames = [];
+	for (var i = 0; i < count; i++) {
+		var frameX = Math.floor(i % widthCount);
+		var frameY = Math.floor(i / widthCount);
+
+		frames[i] = new Frame((frameWidth + sepWidth) * frameX + offsetWidth, (frameHeight + sepHeight) * frameY + offsetHeight,
+				frameWidth, frameHeight);
+	}
+
+	return frames;
+}
+
+// Function that creates a frames array by repeated calls.
+// - x : The x-position of the frame.
+// - y : The y-position of the frame.
+// - width : The width the frame.
+// - height : The height of the frame.
+// - offsetX : The x-offset of the frame from the base.
+// - offsetY : The y-offset of the frame from the base.
+//
+// Usage: ComplexFrames(...)(...)(...) ... (...).create();
+function ComplexFrames(x, y, width, height, offsetX, offsetY) {
+	var frames = [];
+
+	var ret = function(x, y, width, height, offsetX, offsetY) {
+		frames.push(new Frame(x, y, width, height, offsetX, offsetY));
+		return ret;
+	};
+	ret.create = function() {
+		return frames;
+	};
+
+	return ret(x, y, width, height, offsetX, offsetY);
+}
+
+// Constructor, defines a SpriteSheet wrapper for an image.
+// - img : The <img> tag that contins the image.
+// - frames : An array of Frame objects.
+// - frameWidth : The width of a frame.
+// - frameHeight : The height of a frame.
 //
 // Members:
 // - width : The width of the image to draw.
 // - height : The height of the image to draw.
 // - this[i] : Gets the frame with the given index with the given members.
 //      - function draw() : Draws the frame to the canvas.
-function SpriteSheet(img, count, widthCount, heightCount, offsetWidth, offsetHeight, frameWidth, frameHeight) {
+function SpriteSheet(img, frames) {
 	var sheet = this;
-
-	offsetWidth = offsetWidth || 0;
-	offsetHeight = offsetHeight || 0;
-	frameWidth = frameWidth || ((img.width - offsetWidth) / widthCount);
-	frameHeight = frameHeight || ((img.height - offsetHeight) / heightCount);
-
-	this.width = frameWidth;
-	this.height = frameHeight;
+	this.width = MaxSel(frames, function(d) { return d.width; }).width;
+	this.height = MaxSel(frames, function(d) { return d.height; }).height;
 
 	function SheetItem(index) {
-		this.draw = function(x, y) {
-			var frameX = Math.floor(index % widthCount);
-			var frameY = Math.floor(index / widthCount);
+		this.width = frames[index].width;
+		this.height = frames[index].height;
 
-			context.drawImage(
-				img.img, 
-				frameWidth * frameX + offsetWidth, frameHeight * frameY + offsetHeight,
-				frameWidth, frameHeight,
-				x, y,
-				sheet.width, sheet.height);
+		this.draw = function(x, y, w, h, flipH, flipV) {
+			w = w || 1;
+			h = h || 1;
+
+			// If flipping, modify the context.
+			if (flipH || flipV) {
+				CONTEXT.save();
+
+				var tw = 0;
+				var th = 0;
+				var sx = 1;
+				var sy = 1;
+				if (flipH) {
+					tw = this.width;
+					sx = -1;
+					x *= -1;
+				}
+				if (flipV) {
+					th = this.height;
+					sy = -1;
+					y *= -1;
+				}
+
+				CONTEXT.translate(tw, th);
+				CONTEXT.scale(sx, sy);
+			}
+
+			frames[index].draw(img.img, x, y, w, h, index != 0);
+
+			// Restore the context state.
+			if (flipH || flipV)
+				CONTEXT.restore();
+
+			return this;
 		};
 	};
 
-	for (var i = 0; i < count; i++) {
+	for (var i = 0; i < frames.length; i++) {
 		this[i] = new SheetItem(i);
 	}
+}
+
+// Constructor, defines padding used in the animation.
+// - left : The padding on the left of the animation.
+// - top : The padding on the top of the animation.
+// - right : The padding on the right of the animation.
+// - bottom : The padding on the bottom of the animation.
+function Padding(left, top, right, bottom) {
+	this.left = left || 0;
+	this.top = top || 0;
+	this.right = right || 0;
+	this.bottom = bottom || 0;
 }
 
 // Constructor, defines an Animation that controls an animation on a SpriteSheet.
@@ -69,43 +221,69 @@ function SpriteSheet(img, count, widthCount, heightCount, offsetWidth, offsetHei
 // - start : The start index of the animation in the sprite sheet.
 // - count : The number of frames in the animation.
 // - time : The time between frames (in sec).
-// - loop : Whether the animation should loop.
+// - padding : The padding of whitespace in the animation.
+// - loopIndex : The index to continue looping from; true to loop from the beginning; otherwise don't loop.
 // - reverse : Whether the animation should be reversed.
 // - bothDir : Whether the animation should play forward then reverse, ignores reverse.
+// - flipHoriz : Whether to flip the image horizontaly.
+// - flipVert : Whether to flip the image verticaly.
 //
 // Members:
+// - width : The width of the animation, this is not used.
+// - height : The height of the animation, this is not used.
 // - function draw(x, y) : Draws the current image at the given coords.
 // - function step(dt) : Updates the current frame with the given delta-time.
 // - function reset() : Resets the current animation position.
 // - function start() : Sets the animation to playing.
 // - function stop() : Sets the animation to idle.
-function Animation(sheet, start, count, time, loop, reverse, bothDir) {
+function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothDir, flipHoriz, flipVert) {
 	var elapsed = 0;
 	var running = true;
+	var firstLoop = true;
+	var oldStart = start;
+	var loop = (loopIndex || loopIndex === 0);
+	if (loopIndex === true)
+		loopIndex = start;
+	padding = padding || new Padding();
 
 	function frameCount() {
 		if (bothDir) return 2 * count - 2;
 		else return count;
 	}
 
-	this.draw = function(x, y) {
+	this.width = sheet.width;
+	this.height = sheet.height;
+
+	this.draw = function(x, y, w, h) {
 		if (running) {
+			// Get the current index from the time.
 			var index = Math.floor(elapsed / time);
 			if (reverse)
 				index = (count - index - 1);
 			if (index >= count)
-				count = 2 * count - index - 2;
+				index = 2 * count - index - 2;
 			index += start;
 
-			sheet[index].draw(x, y);
+			// Draw the current frame.
+			var ret = sheet[index].draw(x - padding.left, y - padding.top, w, h, flipHoriz, flipVert);
+
+			// Update the width/height.
+			this.width = ret.width - padding.left - padding.right;
+			this.height = ret.height - padding.bottom - padding.top;
+			return this;
 		}
 	};
 	this.step = function(dt) {
 		elapsed += dt;
-		if (elapsed > time * frameCount()) {
+		if (elapsed >= time * frameCount()) {
 			elapsed = 0;
-			if (!loop)
+			if (!loop) 
 				running = false;
+			else if (firstLoop) {
+				firstLoop = false;
+				count -= (loopIndex - start);
+				start = loopIndex;
+			}
 
 			return true;
 		}
@@ -114,6 +292,9 @@ function Animation(sheet, start, count, time, loop, reverse, bothDir) {
 	};
 	this.reset = function() {
 		elapsed = 0;
+		start = oldStart;
+		if (loop)
+			count += (loopIndex - start);
 	};
 	this.start = function() {
 		elapsed = 0;
@@ -124,100 +305,104 @@ function Animation(sheet, start, count, time, loop, reverse, bothDir) {
 	};
 }
 
+// Constructor, defines a still Animation that controls an animation on a SpriteSheet.
+// - sheet : The SpriteSheet that holds the image.
+// - start : The start index of the animation in the sprite sheet.
+// - flipHoriz : Whether to flip the image horizontaly.
+// - flipVert : Whether to flip the image verticaly.
+//
+// Members:
+// - width : The width of the animation, this is not used.
+// - height : The height of the animation, this is not used.
+// - function draw(x, y) : Draws the current image at the given coords.
+// - function step(dt) : Updates the current frame with the given delta-time, does nothing.
+// - function reset() : Resets the current animation position, does nothing.
+// - function start() : Sets the animation to playing, does nothing.
+// - function stop() : Sets the animation to idle, does nothing.
+function StillAnimation(sheet, start, padding, flipHoriz, flipVert) {
+	padding = padding || new Padding();
+
+	this.width = sheet.width;
+	this.height = sheet.height;
+
+	this.draw = function(x, y, w, h) {
+		// Draw the current frame.
+		var ret = sheet[start].draw(x - padding.left, y - padding.top, w, h, flipHoriz, flipVert);
+
+		// Update the width/height.
+		this.width = ret.width - padding.left - padding.right;
+		this.height = ret.height - padding.top - padding.bottom;
+		return this;
+	};
+	this.step = function(dt) {
+		return true;
+	};
+	this.reset = this.start = this.stop = function() { };
+}
+
 // Constructor, defines a set of animations for a sprite sheet.
-// - anims : An array of possible Animation's.
+// - *Accepts a variable number of arguments.
 //
 // Members:
 // - x : The current x position.
 // - y : The current y position.
+// - width : The width of the animation set, readonly.
+// - height : The height of the animation set, readonly.
+// - scaleX : The factor to scale the width.
+// - scaleY : The factor to scale the height.
 // - function draw() : Draws the current animation.
 // - function step(dx) : Updates the current frame with the given delta-time.
 // - function switchTo(i) : Switches the current animation to the given index.
 // - function smoothSwitch(i) : Switches the current animation smoothly.
 // - function clone() : Creates a copy of the current AnimationSet.
-function AnimationSet(anims) {
+// - function curentAnimation() : Gets the current animation number.
+function AnimationSet() {
+	var anims = arguments;
 	var curAnim = 0;
 	var switchAnim = null;
 
 	this.x = 0;
 	this.y = 0;
+	this.width = MaxSel(arguments, function(d) { return d.width; }).width || 0;
+	this.height = MaxSel(arguments, function(d) { return d.height; }).height || 0;
+
+	this.scaleX = 1;
+	this.scaleY = 1;
 
 	this.draw = function() {
-		anims[curAnim].draw(this.x, this.y);
+		var ret = anims[curAnim].draw(this.x, this.y, this.scaleX, this.scaleY);
+
+		this.width = ret.width;
+		this.height = ret.height;
 	};
 	this.step = function(dx) {
 		if (anims[curAnim].step(dx) && switchAnim != null) {
 			curAnim = switchAnim;
 			switchAnim = null;
+
+			anims[curAnim].reset();
+			anims[curAnim].start();
 		}
 	};
 	this.switchTo = function(i) {
 		curAnim = i;
 		switchAnim = null;
+		anims[i].reset();
 		anims[i].start();
 	};
 	this.smoothSwitch = function(i) {
 		switchAnim = i;
+	};
+	this.currentAnimation = function() {
+		return curAnim;
 	};
 	this.clone = function() {
 		return new AnimationSet(anims);
 	};
 }
 
-// Constructor, defines a manager for animations.
-//
-// Members:
-// - function play(set) : Adds the given animation set to be drawn.
-// - function stop(set) : Removes the given animation set.
-function AnimationManager() {
-	var anims = [];
-
-	this.play = function(set) {
-		anims.push(set);
-	};
-	this.stop = function(set) {
-		for (var i = 0; i < anims.length; i++) {
-			if (anims[i] === set) {
-				anims.splice(i, 1);
-				return;
-			}
-		}
-	};
-
-	function Timer() {
-		this.gameTime = 0;
-		this.maxStep = 0.05;
-		this.wallLastTimestamp = 0;
-
-		this.tick = function() {
-			var wallCurrent = Date.now();
-			var wallDelta = (wallCurrent - this.wallLastTimestamp) / 1000;
-			this.wallLastTimestamp = wallCurrent;
-
-			var gameDelta = Math.min(wallDelta, this.maxStep);
-			this.gameTime += gameDelta;
-			return gameDelta;
-		};
-	}
-
-	var timer = new Timer();
-	(function render() {
-		context.clearRect(0, 0, canvas.width, canvas.height);
-
-		var dt = timer.tick();
-		for (var i = 0; i < anims.length; i++) {
-			anims[i].step(dt);
-			anims[i].draw();
-		}
-
-    	window.requestAnimationFrame(render);
-	})();
-}
-
 // jQuery function that is called once the page is loaded.
 $(function() {
-	canvas = document.getElementById("gameWorld");
-	context = canvas.getContext("2d");
-	animations = new AnimationManager();
+	CANVAS = document.getElementById("gameWorld");
+	CONTEXT = CANVAS.getContext("2d");
 });
-

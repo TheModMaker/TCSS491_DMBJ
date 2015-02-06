@@ -3,19 +3,34 @@
 <head>
     <meta charset="utf-8">
 	<title>Test Game</title>
+    <script type="text/javascript">
+        var DEBUG = false;
+    </script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="Scripts/Graphics.js"></script>
 	<script type="text/javascript" src="Scripts/Assets.js"></script>
+    <script type="text/javascript" src="Scripts/Character.js"></script>
+    <script type="text/javascript" src="Scripts/MapBase.js"></script>
+    <script type="text/javascript" src="Scripts/Map1.js"></script>
+    <script type="text/javascript" src="Scripts/Screens.js"></script>
     <script type="text/javascript" src="Scripts/GameEngine.js"></script>
 </head>
 <body>
     <div>Right click and "Inspect Element".  Select the Console Tab to see the debugger output.</div>
+    <div id="t1"></div><div id="t2"></div>
 
-    <canvas id="gameWorld" width="1000" height="1000" style="border: 1px solid brown; background: white"></canvas>
-    <script type="text/javascript">
-    	$(function() {
-    		
-    	});
-    </script>
+    <canvas id="gameWorld" tabindex="0" width="1024" height="512" style="border: 1px solid brown; background: white"></canvas>
+
+    <h2>Features</h2>
+    <ul>
+        <li>Multiple characters.</li>
+        <li>Full collision detection.</li>
+        <li>Ability to spring (shift key).</li>
+        <li>Pause menu ('P' key).</li>
+        <li>Ability to Die with menu.</li>
+        <li>Tracks number of deaths.</li>
+        <li>Ability to win with menu.</li>
+        <li>Easy map editing.</li>
+    </ul>
 </body>
 </html>

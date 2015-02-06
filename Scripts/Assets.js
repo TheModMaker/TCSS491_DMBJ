@@ -2,9 +2,11 @@
 //
 // Assets.js - Defines asset management components for the game.
 //
-// Depends on - jQuery
+// Load Dependencies - <none>
+// Use  Dependencies - <none>
 //
-var assets = null;
+
+var ASSETS = null;
 var onAssetLoad = function() {};
 
 // Method, used to create objects used in the AssetManager constructor.
@@ -29,8 +31,7 @@ function CreateAsset(name, path, type) {
 		return obj;
 	};
 
-	ret(name, path, type);
-	return ret;
+	return ret(name, path, type);
 }
 
 // Constructor, defines a manager for game assets.
@@ -89,12 +90,12 @@ function AssetManager(paths) {
 	}
 }
 
-assets = new AssetManager(CreateAsset
-		("grant", "Images/runningGrant.png", "img")
-		.create()/*,
-		function() {
-    		var sheet = new SpriteSheet(assets["grant"], 10, 5, 2);
-    		var anim = new Animation(sheet, 5, 5, 0.1, true);
-    		var set = new AnimationSet([anim]);
-    		animations.play(set);
-		}*/);
+ASSETS = new AssetManager(CreateAsset
+		("wall", "Images/Wall.jpg", "img")
+		("walln", "Images/WallsNo.jpg", "img")
+		("air", "Images/Air.jpg", "img")
+		("lava", "Images/lava.jpg", "img")
+		("star", "Images/star.jpg", "img")
+		("us", "Images/dmbj.png", "img")
+		("screens", "Images/screens.png", "img")
+		.create());
