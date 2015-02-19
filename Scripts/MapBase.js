@@ -143,90 +143,90 @@ function Map() {
 		}
 	})();
 
+	var canvas = document.createElement("canvas");
+	canvas.width = level[0].length * BLOCK_WIDTH;
+	canvas.height = level.length * BLOCK_WIDTH;
+
 	// Gets the wall type for the given index.
-	function WallType(wall, lines, x, y) {
-		var u = !(y === 0 || lines[y - 1][x] === BLOCK_WALL_CHAR || lines[y - 1][x] === BLOCK_NO_WALL_CHAR);
-		var d = !(y === lines.length - 1 || lines[y + 1][x] === BLOCK_WALL_CHAR || lines[y + 1][x] === BLOCK_NO_WALL_CHAR);
-		var l = !(x === 0 || lines[y][x - 1] === BLOCK_WALL_CHAR || lines[y][x - 1] === BLOCK_NO_WALL_CHAR);
-		var r = !(x === lines[y].length - 1 || lines[y][x + 1] === BLOCK_WALL_CHAR || lines[y][x + 1] === BLOCK_NO_WALL_CHAR);
+	this.compile = function(assets) {
+		function WallType(wall, lines, x, y) {
+			var u = !(y === 0 || lines[y - 1][x] === BLOCK_WALL_CHAR || lines[y - 1][x] === BLOCK_NO_WALL_CHAR);
+			var d = !(y === lines.length - 1 || lines[y + 1][x] === BLOCK_WALL_CHAR || lines[y + 1][x] === BLOCK_NO_WALL_CHAR);
+			var l = !(x === 0 || lines[y][x - 1] === BLOCK_WALL_CHAR || lines[y][x - 1] === BLOCK_NO_WALL_CHAR);
+			var r = !(x === lines[y].length - 1 || lines[y][x + 1] === BLOCK_WALL_CHAR || lines[y][x + 1] === BLOCK_NO_WALL_CHAR);
 
-		return wall + (u << 3) + (l << 2) + (d << 1) + (r);
-	}
-
-	// Compile the lines into the object.
-	var lines = level.slice(0);
-	for (var y = 0; y < lines.length; y++) {
-		var line = lines[y];
-		var ret = [];
-		for (var x = 0; x < line.length; x++) {
-			var c = line[x];
-			if (c === BLOCK_AIR_CHAR) {
-				ret[x] = BLOCK_AIR;
-			} else if (c === BLOCK_WALL_CHAR) {
-				ret[x] = WallType(BLOCK_WALL, lines, x, y);
-			} else if (c === BLOCK_NO_WALL_CHAR) {
-				ret[x] = WallType(BLOCK_NO_WALL, lines, x, y);
-			} else if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
-				ret[x] = kills[c];
-			} else if (c === BLOCK_START_CHAR) {
-				ret[x] = BLOCK_AIR;
-
-				if (DEBUG) {
-					if (this.startX !== undefined)
-						console.log("Duplicate start position.");
-				}
-
-				this.startX = x * BLOCK_WIDTH;
-				this.startY = (y - 1) * BLOCK_WIDTH;
-			} else if (c === BLOCK_END_CHAR) {
-				ret[x] = BLOCK_END;
-
-				if (DEBUG) {
-					if (this.endX !== undefined)
-						console.log("Duplicate end position.");
-				}
-				
-				this.endX = x * BLOCK_WIDTH;
-				this.endY = y * BLOCK_WIDTH;
-			}
+			return wall + (u << 3) + (l << 2) + (d << 1) + (r);
 		}
 
-		level[y] = ret;
-	}
-	if (DEBUG) {
-		if (map.startX === undefined)
-			console.log("Missing start position.");
-		if (map.endX === undefined)
-			console.log("Missing end position.");
-	}
+		// Compile the lines into the object.
+		var ctx = canvas.getContext("2d");
+		for (var y = 0; y < level.length; y++) {
+			var line = level[y];
+			for (var x = 0; x < line.length; x++) {
+				var c = line[x];
+				var i = 0;
+				switch (c) {
+					case BLOCK_AIR_CHAR: 
+						break;
+					case BLOCK_WALL_CHAR:
+						i = WallType(BLOCK_WALL, level, x, y); 
+						break;
+					case BLOCK_NO_WALL_CHAR: 
+						i = WallType(BLOCK_NO_WALL, level, x, y);
+						break;
+					case BLOCK_START_CHAR:
+						if (DEBUG) {
+							if (this.startX !== undefined)
+								console.log("Duplicate start position.");
+						}
 
-	this.draw = function(assets, x, y) {
-		var minX = Math.max(0, Math.floor(x / BLOCK_WIDTH));
-		var maxX = Math.min(level[0].length, Math.ceil((x + CANVAS.width) / BLOCK_WIDTH));
-		var minY = Math.max(0, Math.floor(y / BLOCK_WIDTH));
-		var maxY = Math.min(level.length, Math.ceil((y + CANVAS.height) / BLOCK_WIDTH));
-
-		for (var j = minY; j < maxY; j++) {
-			var row = level[j];
-			for (var i = minX; i < maxX; i++) {
-				if (row[i] !== BLOCK_AIR) {
-					var img = assets[row[i]];
-					img.draw(BLOCK_WIDTH * i - x, BLOCK_WIDTH * j - y);
+						this.startX = x * BLOCK_WIDTH;
+						this.startY = (y - 1) * BLOCK_WIDTH;
+						break;
+					case BLOCK_END_CHAR:
+						i = BLOCK_END;
+						if (DEBUG) {
+							if (this.endX !== undefined)
+								console.log("Duplicate end position.");
+						}
+						
+						this.endX = x * BLOCK_WIDTH;
+						this.endY = y * BLOCK_WIDTH;
+						break;
 				}
+				if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
+					i = kills[c];
+				}
+				if (i != 0)
+					assets[i].draw(x * BLOCK_WIDTH, y * BLOCK_WIDTH, 1, 1, false, false, ctx);
 			}
 		}
+		if (DEBUG) {
+			if (map.startX === undefined)
+				console.log("Missing start position.");
+			if (map.endX === undefined)
+				console.log("Missing end position.");
+		}
+	};
+
+	this.draw = function(x, y) {
+		CONTEXT.drawImage(canvas, x, y, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
 	};
 	this.step = function(dt) {
 	};
 	this.isSolid = function(x, y) {
-		if (x < 0 || y < 0 || y >= level.length || x >= level[y])
-			return false;
-		else if (level[y][x] >= BLOCK_NO_WALL_ULDR)
-			return 1;
-		else if (level[y][x] === BLOCK_END)
+		if (x < 0 || y < 0 || y >= level.length || x >= level[y].length)
 			return 2;
-		else
-			return (level[y][x] !== BLOCK_AIR);
+
+		var c = level[y][x];
+		switch (c) {
+			case BLOCK_WALL_CHAR: 	return 1;
+			case BLOCK_NO_WALL_CHAR:return 2;
+			case BLOCK_END_CHAR: 	return false;
+			case BLOCK_START_CHAR: 	return undefined;
+			case BLOCK_AIR_CHAR: 	return undefined;
+			default: 				return null;
+		}
 	};
 
 	this.height = level.length * BLOCK_WIDTH;
@@ -234,13 +234,18 @@ function Map() {
 }
 
 // Creates a new map manager, is an array.
-function MapManager() {
+var MAPS = (function() {
 	this.current = 0;
 	var maps = [];
-	var assets = {};
 
-	maps.setAssets = function(a) {
-		assets = a;
+	maps.compile = function() {
+        var img = ASSETS["level"];
+        var frames = SimpleFrames(img.width, img.height, 64, 8, 8);
+        var sheet = new SpriteSheet(img, frames);
+
+        for (var i = 0; i < maps.length; i++) {
+        	maps[i].compile(sheet);
+        }
 	};
 	maps.switchTo = function(i) {
 		this.current = i;
@@ -250,18 +255,14 @@ function MapManager() {
 	};
 
 	maps.draw = function(x, y) {
-		this[this.current].draw(assets, x, y);
+		this[this.current].draw(x, y);
 	};
 	maps.step = function(dt) {
-		if (this.current >= 0 && this.current < this.length) {
-			this[this.current].step(dt);
+		this[this.current].step(dt);
 
-			this.width = this[this.current].width;
-			this.height = this[this.current].height;
-		}
+		this.width = this[this.current].width;
+		this.height = this[this.current].height;
 	};
 
 	return maps;
-}
-
-var MAPS = MapManager();
+})();

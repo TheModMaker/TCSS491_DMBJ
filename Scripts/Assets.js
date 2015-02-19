@@ -93,6 +93,7 @@ function AssetManager(paths) {
 
 ASSETS = new AssetManager(CreateAsset
 		("level", "Images/level.png", "img")
+		("portals", "Images/portals.png", "img")
 		("us", "Images/dmbj.png", "img")
 		("screens", "Images/screens.png", "img")
 		.create());

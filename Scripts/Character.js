@@ -13,7 +13,7 @@ var JUMP_SPEED = 300;
 // Contains the speed that players accellerate.
 var FALL_SPEED = 750;
 // Contains the max falling speed.
-var MAX_FALL_SPEED = 10000;
+var MAX_FALL_SPEED = 1000;
 // Contains the walking speed.
 var WALK_SPEED = 75;
 // Contains the sprinting factor.
@@ -21,12 +21,14 @@ var SPRINT_FACTOR = 2;
 
 // Contains the key code for movement left.
 var MOVE_LEFT = "A".charCodeAt(0);
+var MOVE_LEFT2 = 37; // Left-arrow
 // Contains the key code for movement right.
 var MOVE_RIGHT = "D".charCodeAt(0);
+var MOVE_RIGHT2 = 39; // Right-arrow
 // Contains the key code for jumping.
 var MOVE_JUMP = " ".charCodeAt(0);
 // Contains the key code for sprinting.
-var MOVE_SPRINT = 16;
+var MOVE_SPRINT = 16; // Shift
 
 // Constructor, creates a new character object.
 // - set : The animation sets for the character.
@@ -64,6 +66,7 @@ function Character(set, start) {
 	var walks = false; // Whether the player is walking.
 	var sprints = false; // Whether the player is sprinting.
 	var canJump = false;
+	var hitP = null;
 
 	var stopped = false;
 	var stopTimer = 0;
@@ -73,19 +76,18 @@ function Character(set, start) {
 		minX = Math.floor(minX / BLOCK_WIDTH);
 		maxX = Math.floor(maxX / BLOCK_WIDTH);
 
-		minY = Math.round(minY / BLOCK_WIDTH);
-		maxY = Math.round(maxY / BLOCK_WIDTH);
+		minY = Math.floor(minY / BLOCK_WIDTH);
+		maxY = Math.floor(maxY / BLOCK_WIDTH);
 
 		for (var i = minX; i <= maxX; i++) {
 			for (var j = minY; j <= maxY; j++) {
 				var r = map.isSolid(i, j);
-				if (r) {
-					if (r === 1) {
-						ENGINE.killPlayer();
-					} else if (r === 2) {
-						ENGINE.endLevel();
-					}
+				if (r === null)
+					ENGINE.killPlayer();
+				else if (r === false)
+					ENGINE.endLevel();
 
+				if (r) {
 					return { x:(i * BLOCK_WIDTH), y:(j * BLOCK_WIDTH) };
 				}
 			}
@@ -105,7 +107,7 @@ function Character(set, start) {
 	};
 	stop();
 
-	this.update = function(dt, map) {
+	this.update = function(dt, map, portal1, portal2) {
 		set.step(dt);
 		canJump = false;
 
@@ -118,43 +120,46 @@ function Character(set, start) {
 		}
 
 		// Check for vertical blocks.
+		hitP = HitPortal(portal1, portal2, set, xVel * dt, yVel * dt);
 		{
 			var dy = yVel*dt;
 			var hit = false;
-			if (yVel <= 0) {
-				hit = hitInRegion(map, set.x + 10, set.y + set.height, set.x + set.width - 10, set.y + set.height - dy);
+			if (!hitP || !hitP.near.horiz) {
+				if (yVel <= 0) {
+					hit = hitInRegion(map, set.x + 10, set.y + set.height, set.x + set.width - 10, set.y + set.height - dy);
 
-				// We are walking on a block, stop falling and walk.
-				if (hit) {
-					yVel = 0;
-					set.y = hit.y - set.height;
-					canJump = true;
+					// We are walking on a block, stop falling and walk.
+					if (hit) {
+						yVel = 0;
+						set.y = hit.y - set.height;
+						canJump = true;
 
-					if (!walks && !stopped)
-						stop();
+						if (!walks && !stopped)
+							stop();
 
-					if (walks) {
-						if (set.currentAnimation() != runningR + dir)
-							set.switchTo(runningR + dir);
+						if (walks) {
+							if (set.currentAnimation() != runningR + dir)
+								set.switchTo(runningR + dir);
+						}
+
+					} else {
+						// Otherwise we are falling.
+						if (set.currentAnimation() <= runningL)
+							set.switchTo(fallingR + dir);
 					}
-
 				} else {
-					// Otherwise we are falling.
-					if (set.currentAnimation() <= runningL)
-						set.switchTo(fallingR + dir);
-				}
-			} else {
-				// Check for the ceiling.
-				hit = hitInRegion(map, set.x + 10, set.y + dy, set.x + set.width - 10, set.y);
+					// Check for the ceiling.
+					hit = hitInRegion(map, set.x + 10, set.y + dy, set.x + set.width - 10, set.y);
 
-				// We hit the ceiling, stop rising.
-				if (hit) {
-					yVel = 0;
-					set.y = hit.y + BLOCK_WIDTH;
-					set.switchTo(fallingR + dir);
+					// We hit the ceiling, stop rising.
+					if (hit && !hitP) {
+						yVel = 0;
+						set.y = hit.y + BLOCK_WIDTH;
+						set.switchTo(fallingR + dir);
+					}
 				}
 			}
-			if (!hit) {
+			if (!hit || (hitP && hitP.near.horiz)) {
 				stopped = false;
 				yVel -= FALL_SPEED * dt;
 				if (yVel < -MAX_FALL_SPEED)
@@ -163,8 +168,8 @@ function Character(set, start) {
 		}
 
 		// React to user input here so we know if we are on the ground.
-		if (walks) {
-			var max = -(2 * dir - 1) * WALK_SPEED;
+		if (!hitP || !hitP.near.horiz) {
+			var max = -(2 * dir - 1) * WALK_SPEED * walks;
 			if (sprints)
 				max *= SPRINT_FACTOR;
 
@@ -176,21 +181,56 @@ function Character(set, start) {
 		// Check for horizontal bocks.
 		{
 			var dx = xVel * dt;
-			if (xVel > 0) {
-				// We are moving to the right.
-				var hit = hitInRegion(map, set.x + set.width, set.y + 10, set.x + set.width + dx, set.y + set.height - 10);
+			if (!hitP || hitP.near.horiz) {
+				if (xVel > 0) {
+					// We are moving to the right.
+					var hit = hitInRegion(map, set.x + set.width, set.y + 10, set.x + set.width + dx, set.y + set.height - 10);
 
-				if (hit) {
-					xVel = 0;
-					set.x = hit.x - set.width;
+					if (hit) {
+						xVel = 0;
+						set.x = hit.x - set.width;
+					}
+				} else if (xVel < 0) {
+					// We are moving to the left.
+					var hit = hitInRegion(map, set.x - dx, set.y + 10, set.x, set.y + set.height - 10);
+
+					if (hit) {
+						xVel = 0;
+						set.x = hit.x + BLOCK_WIDTH;
+					}
 				}
-			} else if (xVel < 0) {
-				// We are moving to the left.
-				var hit = hitInRegion(map, set.x - dx, set.y + 10, set.x, set.y + set.height - 10);
+			}
+		}
 
-				if (hit) {
-					xVel = 0;
-					set.x = hit.x + BLOCK_WIDTH;
+		// Update the position for the portal.
+		if (hitP) {
+			// If the player is past the center of the portal, move to the other location.
+			if (hitP.dist <= 0) {
+				// If the portals are different directions, swap x and y velocities.
+				if (hitP.near.horiz != hitP.far.horiz) {
+					var t = xVel;
+					xVel = yVel;
+					yVel = t;
+				}
+				if (hitP.near.top == hitP.far.top) {
+					if (hitP.far.horiz)
+						yVel = -yVel;
+					else
+						xVel = -xVel;
+				}
+
+				if (hitP.far.horiz) {
+					set.x = hitP.far.x - set.width / 2;
+					if (!hitP.far.top)
+						set.y = hitP.far.y + hitP.dist;
+					else
+						set.y = hitP.far.y - set.height;
+				} else {
+					set.y = hitP.far.y - set.height / 2;
+					if (hitP.far.top)
+						set.x = hitP.far.x + BLOCK_WIDTH;
+					else
+						set.x = hitP.far.x - set.width;
 				}
 			}
 		}
@@ -203,13 +243,47 @@ function Character(set, start) {
 
 		this.x = set.x;
 		this.y = set.y;
+		this.width = set.width;
+		this.height = set.height;
 	};
-	this.draw = function(x, y) {
-		set.x -= x;
-		set.y -= y;
-		set.draw();
-		set.x += x;
-		set.y += y;
+	this.draw = function(dx, dy, portal1, portal2) {
+		function drawPart(port, dist, x, y) {
+
+			var oldx = set.x;
+			var oldy = set.y;
+
+			set.x = (x === undefined ? set.x : x) - dx;
+			set.y = (y === undefined ? set.y : y) - dy;
+
+			set.draw();
+
+			set.x = oldx;
+			set.y = oldy;
+		}
+
+		var hit = HitPortal(portal1, portal2, set);
+
+		if (!hit) {
+			drawPart();
+		} else {
+			drawPart(hit.near, hit.dist);
+
+			var x, y;
+			if (hit.far.horiz) {
+				x = hit.far.x - set.width / 2;
+				if (!hit.far.top)
+					y = hit.far.y - hit.dist;
+				else
+					y = hit.far.y + hit.dist - set.height;
+			} else {
+				y = hit.far.y - set.height / 2;
+				if (hit.far.top)
+					x = hit.far.x - hit.dist;
+				else
+					x = hit.far.x + hit.dist - set.width;
+			}
+			drawPart(hit.far, hit.dist, x, y);
+		}
 	};
 
 	this.moveLeft = function() {
@@ -233,6 +307,71 @@ function Character(set, start) {
 	};
 }
 
+// Constructor, defines a portal a player can pass through.
+// - x : The x-position of the center of the portal.
+// - y : The y-position of the center of the portal.
+// - horiz : Whether the portal is horizontal.
+// - top : Whether the portal is on the top/right.
+function Portal(x, y, horiz, top) {
+	this.x = x;
+	this.y = y;
+	this.horiz = horiz;
+	this.top = top;
+}
+// Determines if a character has hit one of the portals.
+function HitPortal(portal1, portal2, ch, dx, dy) {
+	function HitPartial(portal, far) {
+		var top = ch.y;
+		var bottom = ch.y + ch.height;
+		var left = ch.x;
+		var right = ch.x + ch.width;
+
+		var pad = 5;
+		var minX, minY, maxX, maxY, dist;
+		if (portal.horiz) {
+			if (portal.top) { // Top
+				minY = top + dy;
+				maxY = bottom - dy;
+				dist = portal.y - top - pad;
+			} else { // Bottom
+				minY = top + dy;
+				maxY = bottom - dy;
+				dist = -(portal.y - top);
+			}
+
+			minX = ch.x + ch.width / 2 - pad;
+			maxX = ch.x + ch.width / 2 + pad;
+		} else {
+			if (portal.top) { // Right
+				minX = left - dx;
+				maxX = right - dx;
+				dist = right - portal.x;
+			} else { // Left
+				minX = left + dx - pad;
+				maxX = right + dx + pad;
+				dist = portal.x - left;
+			}
+
+			minY = ch.y + ch.height / 2 - pad;
+			maxY = ch.y + ch.height / 2 + pad;
+		}
+
+		if (maxY >= portal.y && minY <= portal.y && maxX >= portal.x && minX <= portal.x) {
+			return { near: portal, far: far, dist: dist };
+		} 
+		else
+			return null;
+	}
+
+	dx = dx || 0;
+	dy = dy || 0;
+
+	if (!portal1 || !portal2)
+		return null;
+	else
+		return HitPartial(portal1, portal2) || HitPartial(portal2, portal1);
+}
+
 // Constructor, defines a character that responds to user input.
 // - c : The character object this wraps.
 //
@@ -240,13 +379,110 @@ function Character(set, start) {
 // - function update(dt, map) : Updates the character information using the given delta-time.
 // - function draw() : Draws the character on the screen.
 function PlayerCharacter(c) {
+	var portals = (function() {
+		var img = ASSETS["portals"];
+	    var frames = SimpleFrames(img.width, img.height, 2, 1, 2);
+	    return new SpriteSheet(img, frames);
+	})();
+	var mouse = { };
+	var oldMap = null;
 	var keys = [];
 	var shift = false;
+	var port1 = null;
+	var port2 = null;
+
+	this.x = 0;
+	this.y = 0;
+	this.width = 0;
+	this.height = 0;
+
+	function rayTrace(x0, y0, x1, y1, func) {
+		x0 /= BLOCK_WIDTH;
+		x1 /= BLOCK_WIDTH;
+		y0 /= BLOCK_WIDTH;
+		y1 /= BLOCK_WIDTH;
+
+		var dx = Math.abs(x1 - x0);
+		var dy = Math.abs(y1 - y0);
+		var x = Math.floor(x0);
+		var y = Math.floor(y0);
+
+		var x_inc, y_inc;
+		var error;
+
+		if (dx == 0) {
+			x_inc = 0;
+			error = Infinity;
+		} else if (x1 > x0) {
+			x_inc = 1;
+			error = (Math.floor(x0) + 1 - x0) * dy;
+		} else {
+			x_inc = -1;
+			error = (x0 - Math.floor(x0)) * dy;
+		}
+
+		if (dy == 0) {
+			y_inc = 0;
+			error -= Infinity;
+		} else if (y1 > y0) {
+			y_inc = 1;
+			error -= (Math.floor(y0) + 1 - y0) * dx;
+		} else {
+			y_inc = -1;
+			error -= (y0 - Math.floor(y0)) * dx;
+		}
+
+		var top = true, horiz = true;
+		for (;;) {
+			if (func(x, y, horiz, top)) return;
+
+			if (error > 0) {
+				y += y_inc;
+				error -= dx;
+
+				horiz = true;
+				top = (y_inc > 0);
+			} else {
+				x += x_inc;
+				error += dy;
+
+				horiz = false;
+				top = (x_inc < 0);
+			}
+		}
+	}
+    function lineClip(left, top, right, bottom, x0, y0, x1, y1) {
+    	var t0 = 0;
+    	var t1 = 1;
+    	var dx = x1 - x0;
+    	var dy = y1 - y0;
+    	var p, q, r;
+
+    	for (var e = 0; e < 4; e++) {
+    		if (e == 0) {  p = -dx;    q = -(left - x0);  }
+	        if (e == 1) {  p = dx;     q =  (right - x0); }
+	        if (e == 2) {  p = -dy;    q = -(bottom - y0);}
+	        if (e == 3) {  p = dy;     q =  (top - y0);   }   
+			r = q / p;
+	        if (p == 0 && q < 0) break;//return false;   // Don't draw line at all. (parallel line outside)
+
+	        if (p < 0) {
+	            if (r > t1) break;//return false;         // Don't draw line at all.
+	            else if(r > t0) t0 = r;            // Line is clipped!
+	        } else if(p > 0) {
+	            if(r < t0) break;//return false;      // Don't draw line at all.
+	            else if(r < t1) t1 = r;         // Line is clipped!
+	        }
+    	}
+
+    	return { x0: (x0 + t0*dx), y0: (y0 + t0*dy), x1: (x0 + t1*dx), y1: (y0 + t1*dy) };
+    }
 
 	this.update = function(dt, map) {
-		if (keys[MOVE_LEFT] && !keys[MOVE_RIGHT])
+		oldMap = map;
+		if ((keys[MOVE_LEFT] || keys[MOVE_LEFT2]) && !(keys[MOVE_RIGHT] || keys[MOVE_RIGHT2]))
 			c.moveLeft();
-		else if (keys[MOVE_RIGHT] && !keys[MOVE_LEFT])
+		else if ((keys[MOVE_RIGHT] || keys[MOVE_RIGHT2]) && !(keys[MOVE_LEFT] || keys[MOVE_LEFT2]))
 			c.moveRight();
 
 		if (keys[MOVE_JUMP])
@@ -254,31 +490,172 @@ function PlayerCharacter(c) {
 		if (keys[MOVE_SPRINT])
 			c.sprint();
 
-		c.update(dt, map);
+		c.update(dt, map, port1, port2);
 
 		this.x = c.x;
 		this.y = c.y;
+		this.width = c.width;
+		this.height = c.height;
 	};
-	this.draw = function(x, y) {
-		c.draw(x, y);
+	this.draw = function(dx, dy) {
+		function DrawPortal(port, asset) {
+			var x, y;
+			CONTEXT.save();
+			if (port.horiz) {
+				x = port.x - asset.width / 2;
+				y = port.y;// + (port.top ? 0 : BLOCK_WIDTH);
+
+				CONTEXT.translate(x - dx, y - dy);
+			} else {
+				x = port.x;
+				y = port.y - asset.width / 2;
+
+				CONTEXT.translate(x - dx, y - dy);
+				CONTEXT.rotate(90 * Math.PI / 180);
+			}
+			if (port.top)
+				CONTEXT.scale(1, -1);
+
+			asset.draw(0, 0);
+
+			CONTEXT.restore();
+		};
+
+		if (port1)
+			DrawPortal(port1, portals[0]);
+		if (port2)
+			DrawPortal(port2, portals[1]);
+
+		// Draw the portal path line.
+		CONTEXT.save();
+		CONTEXT.beginPath();
+		CONTEXT.lineWidth = "1";
+		if (mouse.shift)
+			CONTEXT.strokeStyle = "#E17A74";
+		else
+			CONTEXT.strokeStyle = "#00CCFF";
+	    CONTEXT.dashedLine(c.x + c.width / 2 - dx, c.y + c.height / 2 - dy, mouse.x - dx, mouse.y - dy, 3);
+	    CONTEXT.stroke();
+	    // Draw portal circle
+	    CONTEXT.beginPath();
+    	CONTEXT.arc(mouse.x - dx, mouse.y - dy, 3, 0, 2 * Math.PI, false);
+    	CONTEXT.stroke();
+    	CONTEXT.restore();
+
+		c.draw(dx, dy, port1, port2);
+
+		mouse.dx = dx;
+		mouse.dy = dy;
 	};
 
 	// Detach old key listeners.
 	$(document).off(".char");
 
 	// Attach key listeners.
-	function keydown(e) {
+	$(document).on("keydown.char", function(e) {
         keys[e.which] = (keys[e.which] || 0) + 1;
+        mouse.shift = e.shiftKey;
 
         return false; // http://stackoverflow.com/questions/1357118/event-preventdefault-vs-return-false
-	}
-	function keyup(e) {
+	});
+	$(document).on("keyup.char", function(e) {
         keys[e.which] = 0;
+        mouse.shift = e.shiftKey;
 
         return false;
-	}
-    $(document).on("keydown.char", keydown);
-    $(document).on("keyup.char", keyup);
+	});
+	$(document).on("mousedown.char", function(e) {
+		var port;// = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
+		var x = Math.floor(mouse.x / BLOCK_WIDTH) - (!mouse.top || mouse.horiz ? 0 : 1);
+		var y = Math.floor(mouse.y / BLOCK_WIDTH) - (mouse.top || !mouse.horiz ? 0 : 1);
+		var d = (mouse.top ? -1 : 1);
+		if (mouse.horiz) {
+			if (oldMap.isSolid(x, y) === 1 && !oldMap.isSolid(x, y + d)) {
+				if (!oldMap.isSolid(x - 1, y) || oldMap.isSolid(x - 1, y) === 2 || oldMap.isSolid(x - 1, y + d)) {
+					// If the block to the left isn't solid, move to the right.
+					if (oldMap.isSolid(x + 1, y) === 1 && !oldMap.isSolid(x + 1, y + d))
+						port = new Portal((x + 1) * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
+				} else if (!oldMap.isSolid(x + 1, y) || oldMap.isSolid(x + 1, y) === 2 || oldMap.isSolid(x + 1, y + d)) {
+					// If the block to the right isn't solid, move to the left.
+					port = new Portal(x * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
+				} else {
+					port = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
+				}
+			}
+		} else {
+			if (oldMap.isSolid(x, y) === 1 && !oldMap.isSolid(x - d, y)) {
+				if (!oldMap.isSolid(x, y - 1) || oldMap.isSolid(x, y - 1) === 2 || oldMap.isSolid(x - d, y - 1)) {
+					// Id the block above isn't solid, move down.
+					if (oldMap.isSolid(x, y + 1) === 1 && !oldMap.isSolid(x - d, y + 1))
+						port = new Portal(mouse.x, (y+1)*BLOCK_WIDTH, mouse.horiz, mouse.top);
+				} else if (!oldMap.isSolid(x, y + 1) || oldMap.isSolid(x, y + 1) === 2 || oldMap.isSolid(x - d, y + 1)) {
+					// If the block below isn't solid, move up.
+					port = new Portal(mouse.x, y*BLOCK_WIDTH, mouse.horiz, mouse.top);
+				} else {
+					port = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
+				}
+			}
+		}
+
+		// Check for portal-portal collision.
+		if (port != null) {
+			var other;
+			if (e.shiftKey && port1 != null) {
+				other = port1;
+			} else if (!e.shiftKey && port2 != null) {
+				other = port2;
+			}
+
+			if (other != null && other.horiz === port.horiz) {
+				if (port.horiz) {
+					if (Math.abs(port.x - other.x) < 2*CHARACTER_SIZE && port.y == other.y) {
+						port = null;
+					}
+				} else {
+					if (Math.abs(port.y - other.y) < 2*CHARACTER_SIZE && port.x == other.x) {
+						port = null;
+					}
+				}
+			}
+		}
+
+		if (port) {
+			if (e.shiftKey)
+				port2 = port;
+			else
+				port1 = port;
+		}
+	});
+	$(document).on("mousemove.char", function(e) {
+		var temp = $("canvas").offset();
+
+		var x0 = c.x + c.width / 2;
+		var dx = e.pageX - temp.left + mouse.dx - x0;
+		var x1 = x0 + 40*dx;
+		var y0 = c.y + c.height / 2;
+		var dy = e.pageY - temp.top + mouse.dy - y0;
+		var y1 = y0 + 40*dy;
+		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
+			if (!oldMap) return true;
+
+			if (oldMap.isSolid(x, y)) {
+				var r = lineClip(x*BLOCK_WIDTH, y*BLOCK_WIDTH, (x+1)*BLOCK_WIDTH, (y+1)*BLOCK_WIDTH, 
+					x0, y0, x1, y1);
+
+				if (horiz) {
+					mouse.x = r.x1;
+					mouse.y = y*BLOCK_WIDTH + (!top ? BLOCK_WIDTH : 0);
+				} else {
+					mouse.x = x*BLOCK_WIDTH + (top ? BLOCK_WIDTH : 0);
+					mouse.y = r.y0;
+				}
+				mouse.horiz = horiz;
+				mouse.top = top;
+
+				return true;
+			}
+		});
+	});
 }
 
 // Creates a new PlayerCharacter of the given index.

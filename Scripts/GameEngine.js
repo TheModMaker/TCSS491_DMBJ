@@ -11,7 +11,7 @@
 // Members:
 // - function draw() : Draws the game.
 // - function step(dt) : Steps the game forward the given delta-time.
-var ENGINE = new (function GameEngine() {
+var ENGINE = new (function() {
     // Constructor, creates a new mamager that manages update/render loops.
     //
     // Members:
@@ -118,8 +118,8 @@ var ENGINE = new (function GameEngine() {
 
     this.draw = function() {
         if (ch) {
-            MAPS.draw(mapX, mapY);
             ch.draw(mapX, mapY);
+            MAPS.draw(mapX, mapY);
         }
         if (cScreen) cScreen.draw();
     };
@@ -145,12 +145,7 @@ var ENGINE = new (function GameEngine() {
     };
 
     onAssetLoad = function() {
-
-        var img = ASSETS["level"];
-        var frames = SimpleFrames(img.width, img.height, 64, 8, 8);
-        var sheet = new SpriteSheet(img, frames);
-        MAPS.setAssets(sheet);
-
+        MAPS.compile();
         cScreen = new TitleScreen();
 
         // Start the update/render loop.

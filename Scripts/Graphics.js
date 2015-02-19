@@ -35,6 +35,24 @@ window.requestAnimFrame = (window.requestAnimationFrame ||
             function (callback) {
                 window.setTimeout(callback, 1000 / 60);
             });
+CanvasRenderingContext2D.prototype.dashedLine = function (x1, y1, x2, y2, dashLen) {
+    if (dashLen === undefined) dashLen = 2;
+    this.moveTo(x1, y1);
+
+    var dX = x2 - x1;
+    var dY = y2 - y1;
+    var dashes = Math.floor(Math.sqrt(dX * dX + dY * dY) / dashLen);
+    var dashX = dX / dashes;
+    var dashY = dY / dashes;
+
+    var q = 0;
+    while (q++ < dashes) {
+        x1 += dashX;
+        y1 += dashY;
+        this[q % 2 == 0 ? 'moveTo' : 'lineTo'](x1, y1);
+    }
+    this[q % 2 == 0 ? 'moveTo' : 'lineTo'](x2, y2);
+};
 
 // Helper function that returns the max element using the given selector.
 // - data : The input array to search.
@@ -58,6 +76,38 @@ function MaxSel(data, func) {
 	return data[reti];
 }
 
+// Constructor, defines a rectangle.
+// - left : The x-position of the left.
+// - top : The y-position of the top.
+// - right : The x-position of the right.
+// - bottom : The y-position of the bottom.
+function Rect(left, top, right, bottom) {
+	this.left = left || 0;
+	this.top = top || 0;
+	this.right = right || 0;
+	this.bottom = bottom || 0;
+
+	this.flip = function(flipH, flipV) {
+		var l = this.left;
+		var r = this.right;
+		var t = this.top;
+		var b = this.bottom;
+
+		if (flipH) {
+			var temp = l;
+			l = r;
+			r = temp;
+		}
+		if (flipV) {
+			var temp = t;
+			t = b;
+			b = temp;
+		}
+
+		return new Rect(l, t, r, b);
+	};
+}
+
 // Constructor, defines a frame in the SpriteSheet.
 // - x : The x-position of the frame.
 // - y : The y-position of the frame.
@@ -73,20 +123,26 @@ function Frame(x, y, width, height, offsetX, offsetY) {
 	this.offsetX = offsetX || 0;
 	this.offsetY = offsetY || 0;
 
-	this.draw = function(img, x, y, w, h) {
-		CONTEXT.drawImage(
+	this.draw = function(img, ctx, x, y, w, h, clip) {
+		clip = clip || new Rect();
+
+		ctx.drawImage(
 			img, 
-			this.x, this.y,
-			this.width, this.height,
-			x + this.offsetX, y + this.offsetY,
-			this.width * w, this.height * h);
+			this.x + clip.left, 
+			this.y + clip.top,
+			this.width - clip.left - clip.right, 
+			this.height - clip.top - clip.bottom,
+			x + this.offsetX + clip.left, 
+			y + this.offsetY + clip.top,
+			(this.width - clip.left) * w - clip.right, 
+			(this.height - clip.top) * h - clip.bottom);
 
 		if (DEBUG) {
-			CONTEXT.beginPath();
-			CONTEXT.lineWidth = "1";
-			CONTEXT.strokeStyle = "red";
-			CONTEXT.rect(x + this.offsetX, y + this.offsetY, this.width * w, this.height * h); 
-			CONTEXT.stroke();
+			ctx.beginPath();
+			ctx.lineWidth = "1";
+			ctx.strokeStyle = "red";
+			ctx.rect(x + this.offsetX, y + this.offsetY, this.width * w, this.height * h); 
+			ctx.stroke();
 		}
 	};
 }
@@ -162,13 +218,15 @@ function SpriteSheet(img, frames) {
 		this.width = frames[index].width;
 		this.height = frames[index].height;
 
-		this.draw = function(x, y, w, h, flipH, flipV) {
+		this.draw = function(x, y, w, h, flipH, flipV, ctx, clip) {
 			w = w || 1;
 			h = h || 1;
+			ctx = ctx || CONTEXT;
+			clip = clip || new Rect();
 
 			// If flipping, modify the context.
 			if (flipH || flipV) {
-				CONTEXT.save();
+				ctx.save();
 
 				var tw = 0;
 				var th = 0;
@@ -185,15 +243,15 @@ function SpriteSheet(img, frames) {
 					y *= -1;
 				}
 
-				CONTEXT.translate(tw, th);
-				CONTEXT.scale(sx, sy);
+				ctx.translate(tw, th);
+				ctx.scale(sx, sy);
 			}
 
-			frames[index].draw(img.img, x, y, w, h, index != 0);
+			frames[index].draw(img.img, ctx, x, y, w, h, clip.flip(flipH, flipV));
 
 			// Restore the context state.
 			if (flipH || flipV)
-				CONTEXT.restore();
+				ctx.restore();
 
 			return this;
 		};
@@ -254,7 +312,7 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 	this.width = sheet.width;
 	this.height = sheet.height;
 
-	this.draw = function(x, y, w, h) {
+	this.draw = function(x, y, w, h, clip) {
 		if (running) {
 			// Get the current index from the time.
 			var index = Math.floor(elapsed / time);
@@ -265,7 +323,7 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 			index += start;
 
 			// Draw the current frame.
-			var ret = sheet[index].draw(x - padding.left, y - padding.top, w, h, flipHoriz, flipVert);
+			var ret = sheet[index].draw(x - padding.left, y - padding.top, w, h, flipHoriz, flipVert, null, clip);
 
 			// Update the width/height.
 			this.width = ret.width - padding.left - padding.right;
@@ -325,9 +383,9 @@ function StillAnimation(sheet, start, padding, flipHoriz, flipVert) {
 	this.width = sheet.width;
 	this.height = sheet.height;
 
-	this.draw = function(x, y, w, h) {
+	this.draw = function(x, y, w, h, clip) {
 		// Draw the current frame.
-		var ret = sheet[start].draw(x - padding.left, y - padding.top, w, h, flipHoriz, flipVert);
+		var ret = sheet[start].draw(x - padding.left, y - padding.top, w, h, flipHoriz, flipVert, null, clip);
 
 		// Update the width/height.
 		this.width = ret.width - padding.left - padding.right;
@@ -368,9 +426,10 @@ function AnimationSet() {
 
 	this.scaleX = 1;
 	this.scaleY = 1;
+	this.clip = null;
 
 	this.draw = function() {
-		var ret = anims[curAnim].draw(this.x, this.y, this.scaleX, this.scaleY);
+		var ret = anims[curAnim].draw(this.x, this.y, this.scaleX, this.scaleY, this.clip);
 
 		this.width = ret.width;
 		this.height = ret.height;
@@ -405,4 +464,5 @@ function AnimationSet() {
 $(function() {
 	CANVAS = document.getElementById("gameWorld");
 	CONTEXT = CANVAS.getContext("2d");
+	CONTEXT.imageSmoothingEnabled= false;
 });
