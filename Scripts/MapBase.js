@@ -3,7 +3,7 @@
 // MapBase.js - Defines interaction with the main game map.
 //
 // Load Dependencies - <none>
-// Use  Dependencies - jQuery
+// Use  Dependencies - Assets
 //
 
 
@@ -58,33 +58,8 @@ var BLOCK_KILL_CHAR = "~`!@#$%^&()[{]}\\|;:'\",<.>/?".split("");
 // Contains the width/height of blocks on the map.
 var BLOCK_WIDTH = 16;
 
-// Constructor, creates a section on a map.
-// - map : The text that defines the section.
-//
-// Members:
-// - x : Defines the relative position of this section.
-// - y : Defines the relative position of this section.
-function MapSection(map) {
-	this.x = 0;
-	this.y = 0;
-
-	this.kills = [];
-
-	this.lines = map.split("\n");
-	if (this.lines[0] === "")
-		this.lines.splice(0, 1);
-	this.height = this.lines.length;
-	this.width = this.lines[0].length;
-
-	if (DEBUG) {
-		for (var i = 1; i < this.lines.length; i++) 
-			if (this.lines[i].length != this.width)
-				console.log("In a map section, all lines must have the same width.");
-	}
-}
-
 // Constructor, creates a new map.
-// - *Accepts a variable number of arguments that defines map sections.
+// - map : The text that defines the map.
 //
 // Members:
 // - startX : The start x-position.
@@ -94,58 +69,27 @@ function MapSection(map) {
 // - function draw(assets, x, y) : Draws the map using the given assets when the map has scrolled the given amount.
 // - function step(dt) : Updates the map using the given delta-time.
 // - function isSolid(x, y) : Determines if the given block is solid.
-function Map() {
-	var args = arguments;
-	var level = [];
-	var kills = [];
-	(function toLines() {
-		// Store the parts into an [y][x] array by it's relative position.
-		var sections = [];
-		for (var i = 0; i < args.length; i++) {
-			var x = args[i].x;
-			var y = args[i].y;
+function Map(map) {
+	this.assets = [];
+	this.assets[BLOCK_WALL_CHAR] = BLOCK_WALL;
+	this.assets[BLOCK_NO_WALL_CHAR] = BLOCK_NO_WALL;
+	this.assets[BLOCK_END_CHAR] = BLOCK_END;
 
-			$.extend(kills, args[i].kills);
+	var level = map.split("\n");
+	if (level[0] === "")
+		level.splice(0, 1);
+	this.height = level.length * BLOCK_WIDTH;
+	this.width = level[0].length * BLOCK_WIDTH;
 
-			sections[y] = sections[y] || [];
-			sections[y][x] = args[i];
-		}
-
-		// Verify that the sections are correct.
-		if (DEBUG) {
-			var w = args[0].width;
-			var h = args[0].height;
-
-			for (var i = 1; i < args.length; i++) {
-				if (args[i].width != w || args[i].height != h)
-					console.log("All map sections must be the same size.");
-			}
-			for (var x = 0; x < sections.length; x++) {
-				if (!sections[x])
-					console.log("There is a missing section in the map.");
-				for (var y = 0; y < sections[x].length; y++) {
-					if (!sections[x][y])
-						console.log("There is a missing section in the map.")
-				}
-			}
-		}
-
-		// Convert the parts to a simple array of lines.
-		for (var i = 0; i < sections.length; i++) {
-			for (var j = 0; j < sections[i].length; j++) {
-				var sect = sections[i][j];
-				var lines = sect.lines;
-				for (var x = 0; x < lines.length; x++) {
-					var cur = level[i * lines.length + x] || "";
-					level[i * lines.length + x] = cur + lines[x];
-				}
-			}
-		}
-	})();
+	if (DEBUG) {
+		for (var i = 1; i < level.length; i++) 
+			if (level[i].length * BLOCK_WIDTH != this.width)
+				console.log("In a map section, all lines must have the same width.");
+	}
 
 	var canvas = document.createElement("canvas");
-	canvas.width = level[0].length * BLOCK_WIDTH;
-	canvas.height = level.length * BLOCK_WIDTH;
+	canvas.width = this.width;
+	canvas.height = this.height;
 
 	// Gets the wall type for the given index.
 	this.compile = function(assets) {
@@ -169,33 +113,31 @@ function Map() {
 					case BLOCK_AIR_CHAR: 
 						break;
 					case BLOCK_WALL_CHAR:
-						i = WallType(BLOCK_WALL, level, x, y); 
-						break;
 					case BLOCK_NO_WALL_CHAR: 
-						i = WallType(BLOCK_NO_WALL, level, x, y);
+						i = WallType(this.assets[c], level, x, y); 
 						break;
 					case BLOCK_START_CHAR:
-						if (DEBUG) {
-							if (this.startX !== undefined)
-								console.log("Duplicate start position.");
-						}
+						if (DEBUG && this.startX !== undefined)
+							console.log("Duplicate start position.");
 
 						this.startX = x * BLOCK_WIDTH;
 						this.startY = (y - 1) * BLOCK_WIDTH;
 						break;
 					case BLOCK_END_CHAR:
 						i = BLOCK_END;
-						if (DEBUG) {
-							if (this.endX !== undefined)
-								console.log("Duplicate end position.");
-						}
+						if (DEBUG && this.endX !== undefined)
+							console.log("Duplicate end position.");
 						
 						this.endX = x * BLOCK_WIDTH;
 						this.endY = y * BLOCK_WIDTH;
 						break;
-				}
-				if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
-					i = kills[c];
+					default:
+						if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
+							i = this.assets[c];
+						} else if (DEBUG) {
+							console.log("Unknown map part '" + c + "'.");
+						}
+						break;
 				}
 				if (i != 0)
 					assets[i].draw(x * BLOCK_WIDTH, y * BLOCK_WIDTH, 1, 1, false, false, ctx);
@@ -228,15 +170,12 @@ function Map() {
 			default: 				return null;
 		}
 	};
-
-	this.height = level.length * BLOCK_WIDTH;
-	this.width = level[0].length * BLOCK_WIDTH;
 }
 
 // Creates a new map manager, is an array.
 var MAPS = (function() {
-	this.current = 0;
 	var maps = [];
+	maps.current = 0;
 
 	maps.compile = function() {
         var img = ASSETS["level"];

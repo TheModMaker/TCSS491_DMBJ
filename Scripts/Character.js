@@ -326,13 +326,13 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 		var left = ch.x;
 		var right = ch.x + ch.width;
 
-		var pad = 5;
+		var pad = 10;
 		var minX, minY, maxX, maxY, dist;
 		if (portal.horiz) {
 			if (portal.top) { // Top
 				minY = top + dy;
 				maxY = bottom - dy;
-				dist = portal.y - top - pad;
+				dist = portal.y - top - BLOCK_WIDTH;
 			} else { // Bottom
 				minY = top + dy;
 				maxY = bottom - dy;
