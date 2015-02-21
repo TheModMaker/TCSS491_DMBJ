@@ -112,8 +112,10 @@ var ENGINE = new (function() {
         cScreen = new LevelScreen(MAPS.current !== MAPS.length - 1);
     };
     this.nextLevel = function() {
-        MAP.nextLevel();
+        MAPS.nextLevel();
         ch = CreatePlayerCharacter(chCur, MAPS[MAPS.current]);
+        cScreen.detach();
+        cScreen = null;
     };
 
     this.draw = function() {
