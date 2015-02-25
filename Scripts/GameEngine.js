@@ -176,7 +176,7 @@ var ENGINE = new (function() {
                 cScreen = new PauseScreen();
             }
             if (ch && !cScreen && e.which === "L".charCodeAt(0)) {
-                that.nextLevel();
+                that.endLevel();
             }
         });
     };
