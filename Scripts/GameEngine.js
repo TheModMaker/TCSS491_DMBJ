@@ -162,6 +162,7 @@ var ENGINE = new (function() {
         }
     };
 
+    var that = this;
     onAssetLoad = function() {
         MAPS.compile();
         cScreen = new TitleScreen();
@@ -173,6 +174,9 @@ var ENGINE = new (function() {
         $(document).keydown(function(e) {
             if (ch && !cScreen && e.which === "P".charCodeAt(0)) {
                 cScreen = new PauseScreen();
+            }
+            if (ch && !cScreen && e.which === "L".charCodeAt(0)) {
+                that.nextLevel();
             }
         });
     };
