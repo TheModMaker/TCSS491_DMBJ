@@ -380,9 +380,13 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 // - function draw() : Draws the character on the screen.
 function PlayerCharacter(c) {
 	var portals = (function() {
-		var img = ASSETS["portals"];
-	    var frames = SimpleFrames(img.width, img.height, 2, 1, 2);
-	    return new SpriteSheet(img, frames);
+		var img = ASSETS["us"];
+	    var frames = SimpleFrames(img.width, img.height, 143, 11, 13);
+    	var sheet = new SpriteSheet(img, frames);
+
+    	var p1 = new Animation(sheet, 11*11, 10, 0.1, null, true);
+    	var p2 = new Animation(sheet, 11*12, 10, 0.1, null, true);
+    	return [p1, p2];
 	})();
 	var mouse = { };
 	var oldMap = null;
@@ -496,6 +500,9 @@ function PlayerCharacter(c) {
 		this.y = c.y;
 		this.width = c.width;
 		this.height = c.height;
+
+		portals[0].step(dt);
+		portals[1].step(dt);
 	};
 	this.draw = function(dx, dy) {
 		function DrawPortal(port, asset) {
@@ -513,8 +520,10 @@ function PlayerCharacter(c) {
 				CONTEXT.translate(x - dx, y - dy);
 				CONTEXT.rotate(90 * Math.PI / 180);
 			}
-			if (port.top)
+			if (!port.top) {
 				CONTEXT.scale(1, -1);
+			}
+			CONTEXT.translate(0, -asset.height);
 
 			asset.draw(0, 0);
 
@@ -667,23 +676,23 @@ function CreatePlayerCharacter(i, map) {
 		case 2: i = 2; break;
 		case 3: i = 1; break;
 	}
-	i = 9*i + 1; // Mike, Jacob, Brandon, Dain.
+	i = 11*i; // Mike, Jacob, Brandon, Dain.
 
     var img = ASSETS["us"];
-    var frames = SimpleFrames(img.width, img.height, 72, 9, 8);
+    var frames = SimpleFrames(img.width, img.height, 143, 11, 13);
     var sheet = new SpriteSheet(img, frames);
 
-    var padding = new Padding(0, 0, 0, 2); //new Padding(3, 5, 3, 5);
-    var stoppedR = new StillAnimation(sheet, i-1, padding);
-    var stoppedL = new StillAnimation(sheet, i-1, padding, true);
-    var idleR = new StillAnimation(sheet, i-1, padding);
-    var idleL = new StillAnimation(sheet, i-1, padding, true);
+    var padding = null;
+    var stoppedR = new StillAnimation(sheet, i+8, padding);
+    var stoppedL = new StillAnimation(sheet, i+8, padding, true);
+    var idleR = new Animation(sheet, i+8, 3, 0.3, padding, true);
+    var idleL = new Animation(sheet, i+8, 3, 0.3, padding, true, false, false, true);
     var runningR = new Animation(sheet, i, 8, 0.1, padding, true);
     var runningL = new Animation(sheet, i, 8, 0.1, padding, true, false, false, true);
-    var jumpingR = new Animation(sheet, i+36, 4, 0.1, padding, true);
-    var jumpingL = new Animation(sheet, i+36, 4, 0.1, padding, true, false, false, true);
-    var fallingR = new Animation(sheet, i+36, 4, 0.1, padding, true);
-    var fallingL = new Animation(sheet, i+36, 4, 0.1, padding, true, false, false, true);
+    var jumpingR = new Animation(sheet, i+45, 4, 0.1, padding, true);
+    var jumpingL = new Animation(sheet, i+45, 4, 0.1, padding, true, false, false, true);
+    var fallingR = new Animation(sheet, i+45, 4, 0.1, padding, true);
+    var fallingL = new Animation(sheet, i+45, 4, 0.1, padding, true, false, false, true);
 
     var set = new AnimationSet(stoppedR, stoppedL, idleR, idleL, runningR, runningL, jumpingR, jumpingL, fallingR, fallingL);
     var ch = new Character(set, map);
