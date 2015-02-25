@@ -78,9 +78,27 @@ var ENGINE = new (function() {
     var ch = null;
     var chCur = -1;
     var keysDown = [];
-    var mapX = 0;
-    var mapY = 0;
+    var map = { x: 0, y: 0 };
     var deaths = 0;
+
+    function getMap() {
+        if (ch) {
+            var w = CANVAS.width / SCALE;
+            var h = CANVAS.height / SCALE;
+
+            var x = ch.x - w / 2;
+            if (x + w > MAPS.width) x = MAPS.width - w;
+            if (x < 0) x = 0;
+
+            var y = ch.y - h / 2;
+            if (y + h > MAPS.height) y = MAPS.height - h;
+            if (y < 0) y = 0;
+
+            return { x: x, y: y };
+        }
+
+        return { x: 0, y: 0 };
+    }
 
     this.titleScreen = function() {
         cScreen = new TitleScreen();
@@ -92,6 +110,7 @@ var ENGINE = new (function() {
         cScreen = null;
         MAPS.switchTo(0);
         ch = CreatePlayerCharacter(c, MAPS[MAPS.current]);
+        map = getMap();
         chCur = c;
     };
     this.resume = function() {
@@ -106,7 +125,8 @@ var ENGINE = new (function() {
         cScreen.detach();
         cScreen = null;
         MAPS.switchTo(MAPS.current);
-        ch = CreatePlayerCharacter(chCur, MAPS[MAPS.current]);        
+        ch = CreatePlayerCharacter(chCur, MAPS[MAPS.current]);  
+        map = getMap();      
     };
     this.endLevel = function() {
         cScreen = new LevelScreen(MAPS.current !== MAPS.length - 1);
@@ -114,14 +134,15 @@ var ENGINE = new (function() {
     this.nextLevel = function() {
         MAPS.nextLevel();
         ch = CreatePlayerCharacter(chCur, MAPS[MAPS.current]);
+        map = getMap();
         cScreen.detach();
         cScreen = null;
     };
 
     this.draw = function() {
         if (ch) {
-            ch.draw(mapX, mapY);
-            MAPS.draw(mapX, mapY);
+            ch.draw(map.x, map.y);
+            MAPS.draw(map.x, map.y);
         }
         if (cScreen) cScreen.draw();
     };
@@ -131,17 +152,12 @@ var ENGINE = new (function() {
             ch.update(dt, MAPS[MAPS.current]);
 
             if (ch) {
-                var x = ch.x - CANVAS.width / 2;
-                if (x + CANVAS.width > MAPS.width) x = MAPS.width - CANVAS.width;
-                if (x < 0) x = 0;
-                var dx = (x - mapX);
-                mapX += 4 * dx * dt;
+                var t = getMap();
+                var dx = (t.x - map.x);
+                map.x += 4 * dx * dt;
 
-                var y = ch.y - CANVAS.height / 2;
-                if (y + CANVAS.height > MAPS.height) y = MAPS.height - CANVAS.height;
-                if (y < 0) y = 0;
-                var dy = (y - mapY);
-                mapY += 8 * dy * dt;
+                var dy = (t.y - map.y);
+                map.y += 8 * dy * dt;
             }
         }
     };

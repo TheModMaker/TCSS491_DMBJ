@@ -21,6 +21,8 @@ function MenuScreen(start, choices, call) {
 
 	function update(x, y) {
 		var temp = $("canvas").offset();
+		x /= SCALE;
+		y /= SCALE;
 		x -= temp.left;
 		y -= temp.top;
 
@@ -28,7 +30,7 @@ function MenuScreen(start, choices, call) {
 		var t = start;
 		for (var i = 0; i < choices.length; i++) {
 			var c = screens.sheet[1];
-			var left = (CANVAS.width - c.width) / 2;
+			var left = (CANVAS.width / SCALE - c.width) / 2;
 			if (y >= t && y < (t + c.width) && x >= left && x < (left + c.width)) {
 				current = i;
 				over = true;
@@ -55,16 +57,17 @@ function MenuScreen(start, choices, call) {
 	});
 
 	this.draw = function() {
+		var w = CANVAS.width / SCALE;
 		var h = start;
 		for (var i = 0; i < choices.length; i++) {
 			var frame = this.sheet[1 + (current === i)];
-			frame.draw((CANVAS.width - frame.width) / 2, h);
+			frame.draw((w - frame.width) / 2, h);
 
 			CONTEXT.save();
 			CONTEXT.fillStyle = "#D8D8D8";
 			CONTEXT.font = "42px serif";
 			CONTEXT.textAlign = "center";
-			CONTEXT.fillText(choices[i], CANVAS.width / 2, h + frame.height / 2 + 10);
+			CONTEXT.fillText(choices[i], w / 2, h + frame.height / 2 + 10);
 			CONTEXT.restore();
 
 			h += frame.height;
@@ -89,16 +92,17 @@ function TitleScreen() {
 	var oldDraw = this.draw;
 
 	this.draw = function() {
+		var w = CANVAS.width / SCALE;
 		var h = 25;
 		var frame = this.sheet[0];
-		frame.draw((CANVAS.width - frame.width) / 2, h);
+		frame.draw((w - frame.width) / 2, h);
 
 		h += frame.height;
 
 		CONTEXT.save();
 		CONTEXT.font = "36px serif";
 		CONTEXT.textAlign = "center";
-		CONTEXT.fillText("Select Character", CANVAS.width / 2, h);
+		CONTEXT.fillText("Select Character", w / 2, h);
 		CONTEXT.restore();
 
 		oldDraw.call(this);
@@ -120,17 +124,18 @@ function PauseScreen() {
 	var oldDraw = this.draw;
 
 	this.draw = function() {
+		var w = CANVAS.width / SCALE;
 		CONTEXT.save();
 		CONTEXT.globalAlpha = 0.6;
 		CONTEXT.fillStyle = "#E6E6E6";
-		CONTEXT.rect(0, 0, CANVAS.width, CANVAS.height);
+		CONTEXT.rect(0, 0, w, CANVAS.height);
 		CONTEXT.fill();
 		CONTEXT.restore();
 		
 		CONTEXT.save();
 		CONTEXT.font = "52px serif";
 		CONTEXT.textAlign = "center";
-		CONTEXT.fillText("Paused", CANVAS.width / 2, 125);
+		CONTEXT.fillText("Paused", w / 2, 125);
 		CONTEXT.restore();
 
 		oldDraw.call(this);
@@ -152,20 +157,21 @@ function DeathScreen(deaths) {
 	var oldDraw = this.draw;
 
 	this.draw = function() {
+		var w = CANVAS.width / SCALE;
 		CONTEXT.save();
 		CONTEXT.globalAlpha = 0.6;
 		CONTEXT.fillStyle = "#7A0000";
-		CONTEXT.rect(0, 0, CANVAS.width, CANVAS.height);
+		CONTEXT.rect(0, 0, w, CANVAS.height);
 		CONTEXT.fill();
 		CONTEXT.restore();
 
 		CONTEXT.save();
 		CONTEXT.font = "48px serif";
 		CONTEXT.textAlign = "center";
-		CONTEXT.fillText("You Died...", CANVAS.width / 2, 125);
+		CONTEXT.fillText("You Died...", w / 2, 125);
 
 		CONTEXT.font = "32px serif";
-		CONTEXT.fillText("Deaths: " + deaths, CANVAS.width / 2, 170);
+		CONTEXT.fillText("Deaths: " + deaths, w / 2, 170);
 		CONTEXT.restore();
 
 		oldDraw.call(this);
@@ -196,17 +202,18 @@ function LevelScreen(next) {
 	var oldDraw = this.draw;
 
 	this.draw = function() {
+		var w = CANVAS.width / SCALE;
 		CONTEXT.save();
 		CONTEXT.globalAlpha = 0.6;
 		CONTEXT.fillStyle = "#E6E6E6";
-		CONTEXT.rect(0, 0, CANVAS.width, CANVAS.height);
+		CONTEXT.rect(0, 0, w, CANVAS.height);
 		CONTEXT.fill();
 		CONTEXT.restore();
 
 		CONTEXT.save();
 		CONTEXT.font = "48px serif";
 		CONTEXT.textAlign = "center";
-		CONTEXT.fillText("You Won...", CANVAS.width / 2, 125);
+		CONTEXT.fillText("You Won...", w / 2, 125);
 		CONTEXT.restore();
 
 		oldDraw.call(this);

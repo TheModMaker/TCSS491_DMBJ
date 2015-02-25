@@ -381,11 +381,11 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 function PlayerCharacter(c) {
 	var portals = (function() {
 		var img = ASSETS["us"];
-	    var frames = SimpleFrames(img.width, img.height, 143, 11, 13);
+	    var frames = SimpleFrames(img.width, img.height, 22, 11, 2, 0, 0, 0, 355);
     	var sheet = new SpriteSheet(img, frames);
 
-    	var p1 = new Animation(sheet, 11*11, 10, 0.1, null, true);
-    	var p2 = new Animation(sheet, 11*12, 10, 0.1, null, true);
+    	var p1 = new Animation(sheet, 0, 10, 0.1, new Padding(0, 0, 0, 1), true);
+    	var p2 = new Animation(sheet, 11, 10, 0.1, null, true);
     	return [p1, p2];
 	})();
 	var mouse = { };
@@ -639,10 +639,10 @@ function PlayerCharacter(c) {
 		var temp = $("canvas").offset();
 
 		var x0 = c.x + c.width / 2;
-		var dx = e.pageX - temp.left + mouse.dx - x0;
+		var dx = (e.pageX - temp.left) / SCALE + mouse.dx - x0;
 		var x1 = x0 + 40*dx;
 		var y0 = c.y + c.height / 2;
-		var dy = e.pageY - temp.top + mouse.dy - y0;
+		var dy = (e.pageY - temp.top) / SCALE + mouse.dy - y0;
 		var y1 = y0 + 40*dy;
 		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
 			if (!oldMap) return true;

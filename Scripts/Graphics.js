@@ -128,20 +128,20 @@ function Frame(x, y, width, height, offsetX, offsetY) {
 
 		ctx.drawImage(
 			img, 
-			this.x + clip.left, 
-			this.y + clip.top,
-			this.width - clip.left - clip.right, 
-			this.height - clip.top - clip.bottom,
-			x + this.offsetX + clip.left, 
-			y + this.offsetY + clip.top,
-			(this.width - clip.left) * w - clip.right, 
-			(this.height - clip.top) * h - clip.bottom);
+			this.x + clip.left + 1 - (1 / SCALE), 
+			this.y + clip.top + 1 - (1 / SCALE),
+			this.width - clip.left - clip.right - 1 + (1 / SCALE), 
+			this.height - clip.top - clip.bottom - 1 + (1 / SCALE),
+			x + this.offsetX + clip.left - 1 + (1 / SCALE), 
+			y + this.offsetY + clip.top - 1 + (1 / SCALE),
+			(this.width - clip.left) * w - clip.right + 1 - (1 / SCALE), 
+			(this.height - clip.top) * h - clip.bottom + 1 - (1 / SCALE));
 
 		if (DEBUG) {
 			ctx.beginPath();
 			ctx.lineWidth = "1";
 			ctx.strokeStyle = "red";
-			ctx.rect(x + this.offsetX, y + this.offsetY, this.width * w, this.height * h); 
+			ctx.rect(x + this.offsetX, y + this.offsetY, this.width * w, this.height); 
 			ctx.stroke();
 		}
 	};
@@ -464,5 +464,9 @@ function AnimationSet() {
 $(function() {
 	CANVAS = document.getElementById("gameWorld");
 	CONTEXT = CANVAS.getContext("2d");
-	CONTEXT.imageSmoothingEnabled= false;
+	CONTEXT.imageSmoothingEnabled = false;
+
+	CANVAS.width *= SCALE;
+	CANVAS.height *= SCALE;
+	CONTEXT.scale(SCALE, SCALE);
 });
