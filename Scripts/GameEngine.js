@@ -141,8 +141,7 @@ var ENGINE = new (function() {
 
     this.draw = function() {
         if (ch) {
-            ch.draw(map.x, map.y);
-            MAPS.draw(map.x, map.y);
+            MAPS.draw(map.x, map.y, ch);
         }
         if (cScreen) cScreen.draw();
     };

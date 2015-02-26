@@ -70,6 +70,9 @@ var BLOCK_WIDTH = 16;
 // - function step(dt) : Updates the map using the given delta-time.
 // - function isSolid(x, y) : Determines if the given block is solid.
 function Map(map) {
+	this.backgroundSpeed = 1;
+	this.background = null;
+
 	this.assets = [];
 	this.assets[BLOCK_WALL_CHAR] = BLOCK_WALL;
 	this.assets[BLOCK_NO_WALL_CHAR] = BLOCK_NO_WALL;
@@ -151,8 +154,18 @@ function Map(map) {
 		}
 	};
 
-	this.draw = function(x, y) {
-		CONTEXT.drawImage(canvas, x, y, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
+	this.draw = function(dx, dy, ch) {
+		if (this.background) {
+			for (var x = -dx * this.backgroundSpeed; x < CANVAS.width; x += this.background.width) {
+				for (var y = -dy * this.backgroundSpeed; y < CANVAS.width; y += this.background.height) {
+					CONTEXT.drawImage(this.background.img, x, y);
+				}
+			}
+		}
+
+		ch.draw(dx, dy);
+
+		CONTEXT.drawImage(canvas, dx, dy, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
 	};
 	this.step = function(dt) {
 	};
@@ -193,8 +206,8 @@ var MAPS = (function() {
 		this.current++;
 	};
 
-	maps.draw = function(x, y) {
-		this[this.current].draw(x, y);
+	maps.draw = function(x, y, ch) {
+		this[this.current].draw(x, y, ch);
 	};
 	maps.step = function(dt) {
 		this[this.current].step(dt);
