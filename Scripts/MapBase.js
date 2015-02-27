@@ -163,8 +163,6 @@ function Map(map) {
 			}
 		}
 
-		ch.draw(dx, dy);
-
 		CONTEXT.drawImage(canvas, dx, dy, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
 	};
 	this.step = function(dt) {
@@ -206,8 +204,8 @@ var MAPS = (function() {
 		this.current++;
 	};
 
-	maps.draw = function(x, y, ch) {
-		this[this.current].draw(x, y, ch);
+	maps.draw = function(x, y) {
+		this[this.current].draw(x, y);
 	};
 	maps.step = function(dt) {
 		this[this.current].step(dt);

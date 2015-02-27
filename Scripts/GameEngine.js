@@ -118,8 +118,10 @@ var ENGINE = new (function() {
         cScreen = null;
     };
     this.killPlayer = function() {
-        deaths++;
-        cScreen = new DeathScreen(deaths);
+        if (cScreen == null) {
+            deaths++;
+            cScreen = new DeathScreen(deaths);
+        }
     };
     this.restart = function() {
         cScreen.detach();
@@ -142,6 +144,7 @@ var ENGINE = new (function() {
     this.draw = function() {
         if (ch) {
             MAPS.draw(map.x, map.y, ch);
+            ch.draw(map.x, map.y);
         }
         if (cScreen) cScreen.draw();
     };
@@ -158,6 +161,8 @@ var ENGINE = new (function() {
                 var dy = (t.y - map.y);
                 map.y += 8 * dy * dt;
             }
+
+            if (ch.x < -5 || ch.y < -5 || ch.x > MAPS.width + 5 || ch.y > MAPS.height + 5) this.killPlayer();
         }
     };
 

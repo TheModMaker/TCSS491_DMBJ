@@ -7,7 +7,7 @@
 //
 
 // Defines the width/height of the character.
-var CHARACTER_SIZE = 16;
+var CHARACTER_SIZE = 32;
 // Contains the initial speed after a jump.
 var JUMP_SPEED = 300;
 // Contains the speed that players accellerate.
@@ -248,10 +248,18 @@ function Character(set, start) {
 	};
 	this.draw = function(dx, dy, portal1, portal2) {
 		function drawPart(port, dist, x, y) {
+			var clip = 
+			!port ? null : 
+				new Rect(
+					(port.top && !port.horiz ? dist : 0),
+					(!port.top && port.horiz ? dist : 0),
+					(!port.top && !port.horiz ? dist : 0),
+					(port.top && port.horiz ? dist : 0));
 
 			var oldx = set.x;
 			var oldy = set.y;
 
+			set.clip = clip;
 			set.x = (x === undefined ? set.x : x) - dx;
 			set.y = (y === undefined ? set.y : y) - dy;
 
@@ -266,7 +274,10 @@ function Character(set, start) {
 		if (!hit) {
 			drawPart();
 		} else {
-			drawPart(hit.near, hit.dist);
+			if (hit.near.horiz) 
+				drawPart(hit.near, set.height - hit.dist - (hit.near.top ? BLOCK_WIDTH : 0));
+			else
+				drawPart(hit.near, set.width - hit.dist);
 
 			var x, y;
 			if (hit.far.horiz) {
@@ -326,30 +337,30 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 		var left = ch.x;
 		var right = ch.x + ch.width;
 
-		var pad = 10;
+		var pad = 5;
 		var minX, minY, maxX, maxY, dist;
 		if (portal.horiz) {
 			if (portal.top) { // Top
-				minY = top + dy;
+				minY = top - pad;
 				maxY = bottom - dy;
-				dist = portal.y - top - BLOCK_WIDTH;
+				dist = portal.y - top - BLOCK_WIDTH + dy;
 			} else { // Bottom
-				minY = top + dy;
-				maxY = bottom - dy;
-				dist = -(portal.y - top);
+				minY = top - dy;
+				maxY = bottom + pad;
+				dist = bottom - portal.y - dy;
 			}
 
 			minX = ch.x + ch.width / 2 - pad;
 			maxX = ch.x + ch.width / 2 + pad;
 		} else {
 			if (portal.top) { // Right
-				minX = left - dx;
-				maxX = right - dx;
-				dist = right - portal.x;
+				minX = left + dx;
+				maxX = right + pad;
+				dist = right - portal.x + dx;
 			} else { // Left
-				minX = left + dx - pad;
-				maxX = right + dx + pad;
-				dist = portal.x - left;
+				minX = left - pad;
+				maxX = right + dx;
+				dist = portal.x - left - dx;
 			}
 
 			minY = ch.y + ch.height / 2 - pad;
@@ -617,11 +628,11 @@ function PlayerCharacter(c) {
 
 			if (other != null && other.horiz === port.horiz) {
 				if (port.horiz) {
-					if (Math.abs(port.x - other.x) < 2*CHARACTER_SIZE && port.y == other.y) {
+					if (Math.abs(port.x - other.x) < CHARACTER_SIZE && port.y == other.y) {
 						port = null;
 					}
 				} else {
-					if (Math.abs(port.y - other.y) < 2*CHARACTER_SIZE && port.x == other.x) {
+					if (Math.abs(port.y - other.y) < CHARACTER_SIZE && port.x == other.x) {
 						port = null;
 					}
 				}
