@@ -222,13 +222,13 @@ function Character(set, start) {
 				if (hitP.far.horiz) {
 					set.x = hitP.far.x - set.width / 2;
 					if (!hitP.far.top)
-						set.y = hitP.far.y + hitP.dist;
+						set.y = hitP.far.y;
 					else
 						set.y = hitP.far.y - set.height;
 				} else {
 					set.y = hitP.far.y - set.height / 2;
 					if (hitP.far.top)
-						set.x = hitP.far.x + BLOCK_WIDTH;
+						set.x = hitP.far.x;
 					else
 						set.x = hitP.far.x - set.width;
 				}
@@ -369,7 +369,7 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 
 		if (maxY >= portal.y && minY <= portal.y && maxX >= portal.x && minX <= portal.x) {
 			return { near: portal, far: far, dist: dist };
-		} 
+		}
 		else
 			return null;
 	}
@@ -379,8 +379,15 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 
 	if (!portal1 || !portal2)
 		return null;
-	else
-		return HitPartial(portal1, portal2) || HitPartial(portal2, portal1);
+	else {
+		var a = HitPartial(portal1, portal2);
+		var b = HitPartial(portal2, portal1);
+
+		if (a && b)
+			return (a.dist > b.dist ? a : b);
+		else
+			return a || b;
+	}
 }
 
 // Constructor, defines a character that responds to user input.
