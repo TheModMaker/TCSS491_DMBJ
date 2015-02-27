@@ -499,6 +499,34 @@ function PlayerCharacter(c) {
 
     	return { x0: (x0 + t0*dx), y0: (y0 + t0*dy), x1: (x0 + t1*dx), y1: (y0 + t1*dy) };
     }
+    function updateMouse() {
+		var x0 = c.x + c.width / 2;
+		var dx = mouse.rx + mouse.dx - x0;
+		var x1 = x0 + 40*dx;
+		var y0 = c.y + c.height / 2;
+		var dy = mouse.ry + mouse.dy - y0;
+		var y1 = y0 + 40*dy;
+		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
+			if (!oldMap) return true;
+
+			if (oldMap.isSolid(x, y)) {
+				var r = lineClip(x*BLOCK_WIDTH, y*BLOCK_WIDTH, (x+1)*BLOCK_WIDTH, (y+1)*BLOCK_WIDTH, 
+					x0, y0, x1, y1);
+
+				if (horiz) {
+					mouse.x = r.x1;
+					mouse.y = y*BLOCK_WIDTH + (!top ? BLOCK_WIDTH : 0);
+				} else {
+					mouse.x = x*BLOCK_WIDTH + (top ? BLOCK_WIDTH : 0);
+					mouse.y = r.y0;
+				}
+				mouse.horiz = horiz;
+				mouse.top = top;
+
+				return true;
+			}
+		});
+    }
 
 	this.update = function(dt, map) {
 		oldMap = map;
@@ -521,6 +549,8 @@ function PlayerCharacter(c) {
 
 		portals[0].step(dt);
 		portals[1].step(dt);
+
+		updateMouse();
 	};
 	this.draw = function(dx, dy) {
 		function DrawPortal(port, asset) {
@@ -592,7 +622,9 @@ function PlayerCharacter(c) {
         return false;
 	});
 	$(document).on("mousedown.char", function(e) {
-		var port;// = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
+		updateMouse();
+
+		var port;
 		var x = Math.floor(mouse.x / BLOCK_WIDTH) - (!mouse.top || mouse.horiz ? 0 : 1);
 		var y = Math.floor(mouse.y / BLOCK_WIDTH) - (mouse.top || !mouse.horiz ? 0 : 1);
 		var d = (mouse.top ? -1 : 1);
@@ -655,33 +687,9 @@ function PlayerCharacter(c) {
 	});
 	$(document).on("mousemove.char", function(e) {
 		var temp = $("canvas").offset();
-
-		var x0 = c.x + c.width / 2;
-		var dx = (e.pageX - temp.left) / SCALE + mouse.dx - x0;
-		var x1 = x0 + 40*dx;
-		var y0 = c.y + c.height / 2;
-		var dy = (e.pageY - temp.top) / SCALE + mouse.dy - y0;
-		var y1 = y0 + 40*dy;
-		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
-			if (!oldMap) return true;
-
-			if (oldMap.isSolid(x, y)) {
-				var r = lineClip(x*BLOCK_WIDTH, y*BLOCK_WIDTH, (x+1)*BLOCK_WIDTH, (y+1)*BLOCK_WIDTH, 
-					x0, y0, x1, y1);
-
-				if (horiz) {
-					mouse.x = r.x1;
-					mouse.y = y*BLOCK_WIDTH + (!top ? BLOCK_WIDTH : 0);
-				} else {
-					mouse.x = x*BLOCK_WIDTH + (top ? BLOCK_WIDTH : 0);
-					mouse.y = r.y0;
-				}
-				mouse.horiz = horiz;
-				mouse.top = top;
-
-				return true;
-			}
-		});
+		mouse.rx = (e.pageX - temp.left) / SCALE;
+		mouse.ry = (e.pageY - temp.top) / SCALE;
+		updateMouse();
 	});
 }
 
