@@ -114,6 +114,8 @@ var ENGINE = new (function() {
         chCur = c;
     };
     this.resume = function() {
+        SOUNDS.resume();
+
         cScreen.detach();
         cScreen = null;
     };
@@ -121,9 +123,12 @@ var ENGINE = new (function() {
         if (cScreen == null) {
             deaths++;
             cScreen = new DeathScreen(deaths);
+            SOUNDS.stopAll();
         }
     };
     this.restart = function() {
+        SOUNDS.clear();
+
         cScreen.detach();
         cScreen = null;
         MAPS.switchTo(MAPS.current);
@@ -131,9 +136,13 @@ var ENGINE = new (function() {
         map = getMap();      
     };
     this.endLevel = function() {
+        SOUNDS.stopAll();
+
         cScreen = new LevelScreen(MAPS.current !== MAPS.length - 1);
     };
     this.nextLevel = function() {
+        SOUNDS.clear();
+
         MAPS.nextLevel();
         ch = CreatePlayerCharacter(chCur, MAPS[MAPS.current]);
         map = getMap();
@@ -178,6 +187,7 @@ var ENGINE = new (function() {
         $(document).keydown(function(e) {
             if (ch && !cScreen && e.which === "P".charCodeAt(0)) {
                 cScreen = new PauseScreen();
+                SOUNDS.stopAll();
             }
             if (ch && !cScreen && e.which === "L".charCodeAt(0)) {
                 that.endLevel();

@@ -72,6 +72,7 @@ var BLOCK_WIDTH = 16;
 function Map(map) {
 	this.backgroundSpeed = 1;
 	this.background = null;
+	this.backgroundMusic = null;
 
 	this.assets = [];
 	this.assets[BLOCK_WALL_CHAR] = BLOCK_WALL;
@@ -181,6 +182,10 @@ function Map(map) {
 			default: 				return null;
 		}
 	};
+	this.reset = function() {
+		if (this.backgroundMusic)
+			SOUNDS.play(this.backgroundMusic);
+	};
 }
 
 // Creates a new map manager, is an array.
@@ -199,9 +204,11 @@ var MAPS = (function() {
 	};
 	maps.switchTo = function(i) {
 		this.current = i;
+		this[this.current].reset();
 	};
 	maps.nextLevel = function() {
 		this.current++;
+		this[this.current].reset();
 	};
 
 	maps.draw = function(x, y) {

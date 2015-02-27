@@ -52,6 +52,19 @@ function AssetManager(paths) {
 		return count == paths.length;
 	}
 
+	function makeLoad(msg, name, call) {
+		return function() {
+			if (call) call(this);
+
+			if (DEBUG)
+				console.log(msg + " " + name);
+			count++;
+			if (isDone() && typeof onAssetLoad === "function") {
+				onAssetLoad();
+			}
+		};
+	}
+
 	function ImgAsset(name, path) {
 		var imgAsset = this;
 		this.name = name;
@@ -59,24 +72,27 @@ function AssetManager(paths) {
 		
 		this.img = new Image();
 
-		function loaded(msg) {
-			return function() {
-				imgAsset.width = this.width;
-				imgAsset.height = this.height;
-
-				if (DEBUG)
-					console.log(msg + " " + name);
-				count++;
-				if (isDone() && typeof onAssetLoad === "function") {
-					onAssetLoad();
-				}
-			};
+		function onLoad(img) {
+			imgAsset.width = img.width;
+			imgAsset.height = img.height;
 		}
 
-		this.img.addEventListener("load", loaded("Loaded"));
-		this.img.addEventListener("error", loaded("Errored"));
+		this.img.addEventListener("load", makeLoad("Loaded", name, onLoad));
+		this.img.addEventListener("error", makeLoad("Errored", name, onLoad));
 
 		this.img.src = path;
+	}
+	function SoundAsset(name, path) {
+		var soundAsset = this;
+		this.name = name;
+		this.path = path;
+
+		this.audio = new Audio();
+
+		this.audio.addEventListener("canplay", makeLoad("Loaded", name));
+		this.audio.addEventListener("error", makeLoad("Errored", name));
+
+		this.audio.src = path;
 	}
 
 	this.getImg = function(name) {
@@ -87,6 +103,10 @@ function AssetManager(paths) {
 		var data = paths[i];
 		if (data.type === "img") {
 			this[data.name] = new ImgAsset(data.name, data.path);
+		} else if (data.type === "sound") {
+			this[data.name] = new SoundAsset(data.name, data.path);
+		} else if (DEBUG) {
+			console.log("Unknown asset type '" + data.type + "'.");
 		}
 	}
 }
@@ -95,4 +115,5 @@ ASSETS = new AssetManager(CreateAsset
 		("level", "Images/level.png", "img")
 		("us", "Images/dmbj.png", "img")
 		("screens", "Images/screens.png", "img")
+		//("test", "Audio/Test.mp3", "sound")
 		.create());
