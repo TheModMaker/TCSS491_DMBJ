@@ -56,6 +56,10 @@ var BLOCK_NO_WALL_ULDR = 0xF + BLOCK_NO_WALL;
 
 // Defines the characters that will kill the player.
 var BLOCK_KILL_CHAR = "~`!@$%^&()[{]}\\|;:'\",<.>/?".split("");
+// Defines the characters for doors.
+var BLOCK_DOOR_CHAR   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+// Defines the characters for buttons.
+var BLOCK_BUTTON_CHAR = "abcdefghijklmnopqrstuvwxyz".split("");
 
 // Contains the width/height of blocks on the map.
 var BLOCK_WIDTH = 16;
@@ -72,6 +76,39 @@ var BLOCK_WIDTH = 16;
 // - function step(dt) : Updates the map using the given delta-time.
 // - function isSolid(x, y) : Determines if the given block is solid.
 function Map(map) {
+	function makeDoor(x, y) {
+		var img = ASSETS["level"];
+		var frames = [new Frame(16, 0, 16, 32)];
+		var sheet = new SpriteSheet(img, frames);
+
+		var closed = new StillAnimation(sheet, 0);
+		var open = new StillAnimation(sheet, 0);
+		var opening = new StillAnimation(sheet, 0);
+		var closing = new StillAnimation(sheet, 0);
+		
+		var ret = new AnimationSet(closed, open, opening, closing);
+		ret.x = x*BLOCK_WIDTH;
+		ret.y = y*BLOCK_WIDTH;
+		return ret;
+	};
+	function makeButton(x, y, s) {
+		var img = ASSETS["level"];
+		var frames = [new Frame(16, 0, 16, 16)];
+		var sheet = new SpriteSheet(img, frames);
+
+		var released = new StillAnimation(sheet, 0);
+		var pressed = new StillAnimation(sheet, 0);
+		
+		var ret = new AnimationSet(released, pressed);
+		ret.x = x*BLOCK_WIDTH;
+		ret.y = y*BLOCK_WIDTH;
+		ret.state = s;
+		return ret;
+	};
+	var states = [];
+	var doors = [];
+	var buttons = [];
+
 	this.backgroundSpeed = 1;
 	this.background = null;
 	this.backgroundMusic = null;
@@ -147,6 +184,19 @@ function Map(map) {
 					default:
 						if (BLOCK_KILL_CHAR.indexOf(c) != -1) {
 							i = this.assets[c];
+						} else if (BLOCK_DOOR_CHAR.indexOf(c) != -1) {
+							if (y > 0 && level[y-1][x] == c) {
+								if (y+1 < level.length && level[y+1][x] == c) {
+									console.log("Doors must be exactly two blocks tall.")
+								}
+
+								doors.push(makeDoor(x, y-1));
+							} else if (y+1 >= level.length || level[y+1][x] != c) {
+								console.log("Doors must be exactly two blocks tall.")
+							}
+						} else if (BLOCK_BUTTON_CHAR.indexOf(c) != -1) {
+							buttons.push(makeButton(x, y, c.charCodeAt(0) - BLOCK_BUTTON_CHAR[0].charCodeAt(0)));
+							states[c.charCodeAt(0) - BLOCK_BUTTON_CHAR[0].charCodeAt(0)] = true;
 						} else if (DEBUG) {
 							console.log("Unknown map part '" + c + "'.");
 						}
@@ -161,6 +211,8 @@ function Map(map) {
 				console.log("Missing start position.");
 			if (this.endX === undefined)
 				console.log("Missing end position.");
+			if (buttons.length != doors.length)
+				console.log("All doors must have buttons for them.")
 		}
 	};
 
@@ -174,6 +226,21 @@ function Map(map) {
 		}
 
 		CONTEXT.drawImage(canvas, dx, dy, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
+
+		for (var i = 0; i < doors.length; i++) {
+			doors[i].x -= dx;
+			doors[i].y -= dy;
+			doors[i].draw();
+			doors[i].x += dx;
+			doors[i].y += dy;
+		}
+		for (var i = 0; i < buttons.length; i++) {
+			buttons[i].x -= dx;
+			buttons[i].y -= dy;
+			buttons[i].draw();
+			buttons[i].x += dx;
+			buttons[i].y += dy;
+		}
 	};
 	this.step = function(dt) {
 	};
@@ -189,12 +256,39 @@ function Map(map) {
 			case BLOCK_CUBE_CHAR: 	return undefined;
 			case BLOCK_START_CHAR: 	return undefined;
 			case BLOCK_AIR_CHAR: 	return undefined;
-			default: 				return null;
+			default:
+				if (BLOCK_BUTTON_CHAR.indexOf(c) != -1)    return undefined;
+				else if (BLOCK_DOOR_CHAR.indexOf(c) != -1) return states[c.charCodeAt(0) - BLOCK_DOOR_CHAR[0].charCodeAt(0)] ? 2 : undefined;
+				else 									   return null;
 		}
 	};
 	this.reset = function() {
 		if (this.backgroundMusic)
 			SOUNDS.play(this.backgroundMusic);
+	};
+	this.checkButtons = function() {
+		function collide(a, b) {
+			return (a.x <= b.x + b.width &&
+                	b.x <= a.x + a.width &&
+	                a.y <= b.y + b.height &&
+	                b.y <= a.y + a.height);
+		}
+
+		var objs = arguments;
+		for (var x in states) {
+			states[x] = true;
+		}
+
+		for (var x in buttons) {
+			var b = buttons[x];
+			for (var i = 0; i < objs.length; i++) {
+				var o = objs[i];
+				if (o && collide(o, b)) {
+					states[b.state] = false;
+					break;
+				}
+			}
+		}
 	};
 }
 

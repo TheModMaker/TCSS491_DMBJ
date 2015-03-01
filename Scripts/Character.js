@@ -555,6 +555,8 @@ function PlayerCharacter(set, map, cube) {
     };
 
 	this.update = function(dt, map) {
+		map.checkButtons(this, cube);
+
 		oldMap = map;
 		if ((keys[MOVE_LEFT] || keys[MOVE_LEFT2]) && !(keys[MOVE_RIGHT] || keys[MOVE_RIGHT2]))
 			this.moveLeft();
