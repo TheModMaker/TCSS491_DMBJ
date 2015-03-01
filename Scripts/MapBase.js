@@ -15,6 +15,8 @@ var BLOCK_END_CHAR = '*';
 var BLOCK_END = 1;
 // Defines the start of the map.
 var BLOCK_START_CHAR = '+';
+// Defines where a companion cube will spawn.
+var BLOCK_CUBE_CHAR = '#';
 // Defines a normal wall.
 var BLOCK_WALL_CHAR = '-';
 var BLOCK_WALL = 0x0 + 2;
@@ -53,7 +55,7 @@ var BLOCK_NO_WALL_LDR = 0x7 + BLOCK_NO_WALL;
 var BLOCK_NO_WALL_ULDR = 0xF + BLOCK_NO_WALL;
 
 // Defines the characters that will kill the player.
-var BLOCK_KILL_CHAR = "~`!@#$%^&()[{]}\\|;:'\",<.>/?".split("");
+var BLOCK_KILL_CHAR = "~`!@$%^&()[{]}\\|;:'\",<.>/?".split("");
 
 // Contains the width/height of blocks on the map.
 var BLOCK_WIDTH = 16;
@@ -127,6 +129,13 @@ function Map(map) {
 						this.startX = x * BLOCK_WIDTH;
 						this.startY = (y - 1) * BLOCK_WIDTH;
 						break;
+					case BLOCK_CUBE_CHAR:
+						if (DEBUG && this.cubeX !== undefined)
+							console.log("Duplicate cube spawn position.");
+						
+						this.cubeX = x * BLOCK_WIDTH;
+						this.cubeY = y * BLOCK_WIDTH;
+						break;
 					case BLOCK_END_CHAR:
 						i = BLOCK_END;
 						if (DEBUG && this.endX !== undefined)
@@ -155,7 +164,7 @@ function Map(map) {
 		}
 	};
 
-	this.draw = function(dx, dy, ch) {
+	this.draw = function(dx, dy) {
 		if (this.background) {
 			for (var x = -dx * this.backgroundSpeed; x < CANVAS.width; x += this.background.width) {
 				for (var y = -dy * this.backgroundSpeed; y < CANVAS.width; y += this.background.height) {
@@ -177,6 +186,7 @@ function Map(map) {
 			case BLOCK_WALL_CHAR: 	return 1;
 			case BLOCK_NO_WALL_CHAR:return 2;
 			case BLOCK_END_CHAR: 	return false;
+			case BLOCK_CUBE_CHAR: 	return undefined;
 			case BLOCK_START_CHAR: 	return undefined;
 			case BLOCK_AIR_CHAR: 	return undefined;
 			default: 				return null;

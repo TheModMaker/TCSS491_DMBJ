@@ -70,6 +70,12 @@ function Character(set, start) {
 
 	var stopped = false;
 	var stopTimer = 0;
+	var that = this;
+
+	this.x = 0;
+	this.y = 0;
+	this.width = set.width;
+	this.height = set.height;
 
 	// Determines whether there is a solid block in the region (in pixels).
 	function hitInRegion(map, minX, minY, maxX, maxY) {
@@ -83,9 +89,9 @@ function Character(set, start) {
 			for (var j = minY; j <= maxY; j++) {
 				var r = map.isSolid(i, j);
 				if (r === null)
-					ENGINE.killPlayer();
+					that.kill();
 				else if (r === false)
-					ENGINE.endLevel();
+					that.endLevel();
 
 				if (r) {
 					return { x:(i * BLOCK_WIDTH), y:(j * BLOCK_WIDTH) };
@@ -95,7 +101,7 @@ function Character(set, start) {
 		return null;
 	}
 	// Stops the player and switches animations, called here also.
-	function stop() {
+	this.stop = function() {
 		if (set.currentAnimation() >= runningR)
 			set.switchTo(stoppedR + dir);
 
@@ -105,7 +111,7 @@ function Character(set, start) {
 			stopTimer = 5;
 		stopped = true;
 	};
-	stop();
+	this.stop();
 
 	this.update = function(dt, map, portal1, portal2) {
 		set.step(dt);
@@ -135,7 +141,7 @@ function Character(set, start) {
 						canJump = true;
 
 						if (!walks && !stopped)
-							stop();
+							this.stop();
 
 						if (walks) {
 							if (set.currentAnimation() != runningR + dir)
@@ -390,13 +396,38 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 	}
 }
 
-// Constructor, defines a character that responds to user input.
-// - c : The character object this wraps.
+// Constructor, defines a companion cube character.
 //
 // Members:
 // - function update(dt, map) : Updates the character information using the given delta-time.
 // - function draw() : Draws the character on the screen.
-function PlayerCharacter(c) {
+function CubeCharacter(map) {
+	var cube = (function() {
+		var img = ASSETS["level"];
+        var frames = SimpleFrames(img.width, img.height, 64, 8, 8);
+        var sheet = new SpriteSheet(img, frames);
+        var anim = new StillAnimation(sheet, 1);
+        return new AnimationSet(anim);
+	})();
+	Character.call(this, cube, map);
+
+	this.endLevel = function() {};
+	this.kill = function() {
+		cube.x = map.cubeX;
+		cube.y = map.cubeY;
+	};
+}
+
+// Constructor, defines a character that responds to user input.
+// - c : The character object this wraps.
+// - cube : The character object for the cube.
+//
+// Members:
+// - function update(dt, map) : Updates the character information using the given delta-time.
+// - function draw() : Draws the character on the screen.
+function PlayerCharacter(set, map, cube) {
+	Character.call(this, set, map);
+
 	var portals = (function() {
 		var img = ASSETS["us"];
 	    var frames = SimpleFrames(img.width, img.height, 22, 11, 2, 0, 0, 0, 355);
@@ -407,16 +438,15 @@ function PlayerCharacter(c) {
     	return [p1, p2];
 	})();
 	var mouse = { };
-	var oldMap = null;
+	var oldMap = map;
 	var keys = [];
 	var shift = false;
 	var port1 = null;
 	var port2 = null;
+	var that = this;
 
-	this.x = 0;
-	this.y = 0;
-	this.width = 0;
-	this.height = 0;
+	var oldDraw = this.draw;
+	var oldUpdate = this.update;
 
 	function rayTrace(x0, y0, x1, y1, func) {
 		x0 /= BLOCK_WIDTH;
@@ -500,15 +530,13 @@ function PlayerCharacter(c) {
     	return { x0: (x0 + t0*dx), y0: (y0 + t0*dy), x1: (x0 + t1*dx), y1: (y0 + t1*dy) };
     }
     function updateMouse() {
-		var x0 = c.x + c.width / 2;
+		var x0 = that.x + that.width / 2;
 		var dx = mouse.rx + mouse.dx - x0;
 		var x1 = x0 + 40*dx;
-		var y0 = c.y + c.height / 2;
+		var y0 = that.y + that.height / 2;
 		var dy = mouse.ry + mouse.dy - y0;
 		var y1 = y0 + 40*dy;
 		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
-			if (!oldMap) return true;
-
 			if (oldMap.isSolid(x, y)) {
 				var r = lineClip(x*BLOCK_WIDTH, y*BLOCK_WIDTH, (x+1)*BLOCK_WIDTH, (y+1)*BLOCK_WIDTH, 
 					x0, y0, x1, y1);
@@ -528,24 +556,28 @@ function PlayerCharacter(c) {
 		});
     }
 
+    this.kill = function() {
+    	ENGINE.killPlayer();
+    };
+    this.endLevel = function() {
+    	ENGINE.endLevel();
+    };
+
 	this.update = function(dt, map) {
 		oldMap = map;
 		if ((keys[MOVE_LEFT] || keys[MOVE_LEFT2]) && !(keys[MOVE_RIGHT] || keys[MOVE_RIGHT2]))
-			c.moveLeft();
+			this.moveLeft();
 		else if ((keys[MOVE_RIGHT] || keys[MOVE_RIGHT2]) && !(keys[MOVE_LEFT] || keys[MOVE_LEFT2]))
-			c.moveRight();
+			this.moveRight();
 
 		if (keys[MOVE_JUMP])
-			c.jump();
+			this.jump();
 		if (keys[MOVE_SPRINT])
-			c.sprint();
+			this.sprint();
 
-		c.update(dt, map, port1, port2);
-
-		this.x = c.x;
-		this.y = c.y;
-		this.width = c.width;
-		this.height = c.height;
+		oldUpdate.call(this, dt, map, port1, port2);
+		if (cube)
+			cube.update(dt, map, port1, port2);
 
 		portals[0].step(dt);
 		portals[1].step(dt);
@@ -591,7 +623,7 @@ function PlayerCharacter(c) {
 			CONTEXT.strokeStyle = "#E17A74";
 		else
 			CONTEXT.strokeStyle = "#00CCFF";
-	    CONTEXT.dashedLine(c.x + c.width / 2 - dx, c.y + c.height / 2 - dy, mouse.x - dx, mouse.y - dy, 3);
+	    CONTEXT.dashedLine(this.x + this.width / 2 - dx, this.y + this.height / 2 - dy, mouse.x - dx, mouse.y - dy, 3);
 	    CONTEXT.stroke();
 	    // Draw portal circle
 	    CONTEXT.beginPath();
@@ -599,7 +631,9 @@ function PlayerCharacter(c) {
     	CONTEXT.stroke();
     	CONTEXT.restore();
 
-		c.draw(dx, dy, port1, port2);
+		oldDraw.call(this, dx, dy, port1, port2);
+		if (cube)
+			cube.draw(dx, dy, port1, port2);
 
 		mouse.dx = dx;
 		mouse.dy = dy;
@@ -721,7 +755,7 @@ function CreatePlayerCharacter(i, map) {
     var fallingL = new Animation(sheet, i+45, 4, 0.1, padding, true, false, false, true);
 
     var set = new AnimationSet(stoppedR, stoppedL, idleR, idleL, runningR, runningL, jumpingR, jumpingL, fallingR, fallingL);
-    var ch = new Character(set, map);
+    var cube = new CubeCharacter(map);
 
-    return new PlayerCharacter(ch);
+    return new PlayerCharacter(set, map, (map.cubeX && cube));
 }

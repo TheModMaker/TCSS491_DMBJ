@@ -59,7 +59,7 @@ CanvasRenderingContext2D.prototype.dashedLine = function (x1, y1, x2, y2, dashLe
 // - func : The selector function.
 function MaxSel(data, func) {
 	func = func || function(data) { return data; };
-	if (!data || data.length === 0) {
+	if (!data || !data.length) {
 		return;
 	}
 
@@ -444,13 +444,13 @@ function AnimationSet() {
 		}
 	};
 	this.switchTo = function(i) {
-		curAnim = i;
+		curAnim = Math.min(anims.length-1, i);
 		switchAnim = null;
-		anims[i].reset();
-		anims[i].start();
+		anims[curAnim].reset();
+		anims[curAnim].start();
 	};
 	this.smoothSwitch = function(i) {
-		switchAnim = i;
+		switchAnim = Math.min(anims.length-1, i);
 	};
 	this.currentAnimation = function() {
 		return curAnim;
