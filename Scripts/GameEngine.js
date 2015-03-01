@@ -170,8 +170,6 @@ var ENGINE = new (function() {
                 var dy = (t.y - map.y);
                 map.y += 8 * dy * dt;
             }
-
-            if (ch.x < -5 || ch.y < -5 || ch.x > MAPS.width + 5 || ch.y > MAPS.height + 5) this.killPlayer();
         }
     };
 

@@ -72,8 +72,8 @@ function Character(set, start) {
 	var stopTimer = 0;
 	var that = this;
 
-	this.x = 0;
-	this.y = 0;
+	this.x = set.x;
+	this.y = set.y;
 	this.width = set.width;
 	this.height = set.height;
 
@@ -100,6 +100,15 @@ function Character(set, start) {
 		}
 		return null;
 	}
+	// A helper for determining player-cube collision
+	function hitBox(minB0, maxB0, minB1, maxB1, x0, x1, dx) {
+		if (maxB1 < minB0 || minB1 > maxB0) return null;
+
+		if (dx > 0)
+			return (x0 < x1 && (x0 + dx) > x1) ? { x:x0, y:x0 } : null;
+		else
+			return (x0 < x1 && (x0 - dx) > x1) ? { x:x1, y:x1 } : null;
+	}
 	// Stops the player and switches animations, called here also.
 	this.stop = function() {
 		if (set.currentAnimation() >= runningR)
@@ -113,7 +122,7 @@ function Character(set, start) {
 	};
 	this.stop();
 
-	this.update = function(dt, map, portal1, portal2) {
+	this.update = function(dt, map, portal1, portal2, other) {
 		set.step(dt);
 		canJump = false;
 
@@ -132,7 +141,8 @@ function Character(set, start) {
 			var hit = false;
 			if (!hitP || !hitP.near.horiz) {
 				if (yVel <= 0) {
-					hit = hitInRegion(map, set.x + 10, set.y + set.height, set.x + set.width - 10, set.y + set.height - dy);
+					hit = hitInRegion(map, set.x + 10, set.y + set.height, set.x + set.width - 10, set.y + set.height - dy) ||
+						  (other && hitBox(set.x, set.x + set.width, other.x, other.x + other.width, set.y + set.height - 2, other.y, dy - 5));
 
 					// We are walking on a block, stop falling and walk.
 					if (hit) {
@@ -155,7 +165,8 @@ function Character(set, start) {
 					}
 				} else {
 					// Check for the ceiling.
-					hit = hitInRegion(map, set.x + 10, set.y + dy, set.x + set.width - 10, set.y);
+					hit = ((!hitP || !hitP.near.horix) && hitInRegion(map, set.x + 10, set.y + dy, set.x + set.width - 10, set.y)) ||
+						  (other && hitBox(set.x, set.x + set.width, other.x, other.x + other.width, other.y + other.height - BLOCK_WIDTH, set.y - BLOCK_WIDTH, dy));
 
 					// We hit the ceiling, stop rising.
 					if (hit && !hitP) {
@@ -190,7 +201,8 @@ function Character(set, start) {
 			if (!hitP || hitP.near.horiz) {
 				if (xVel > 0) {
 					// We are moving to the right.
-					var hit = hitInRegion(map, set.x + set.width, set.y + 10, set.x + set.width + dx, set.y + set.height - 10);
+					var hit = hitInRegion(map, set.x + set.width, set.y + 10, set.x + set.width + dx, set.y + set.height - 10) ||
+							  (other && hitBox(set.y, set.y + set.height, other.y, other.y + other.height, this.x + this.width, other.x, dx));
 
 					if (hit) {
 						xVel = 0;
@@ -198,7 +210,8 @@ function Character(set, start) {
 					}
 				} else if (xVel < 0) {
 					// We are moving to the left.
-					var hit = hitInRegion(map, set.x - dx, set.y + 10, set.x, set.y + set.height - 10);
+					var hit = hitInRegion(map, set.x - dx, set.y + 10, set.x, set.y + set.height - 10) ||
+							  (other && hitBox(set.y, set.y + set.height, other.y, other.y + other.height, other.x + other.width - BLOCK_WIDTH, this.x - BLOCK_WIDTH, dx));
 
 					if (hit) {
 						xVel = 0;
@@ -251,6 +264,8 @@ function Character(set, start) {
 		this.y = set.y;
 		this.width = set.width;
 		this.height = set.height;
+
+        if (set.x < -15 || set.y < -15 || set.x > map.width + 15 || set.y > map.height + 15) this.kill();
 	};
 	this.draw = function(dx, dy, portal1, portal2) {
 		function drawPart(port, dist, x, y) {
@@ -551,9 +566,9 @@ function PlayerCharacter(set, map, cube) {
 		if (keys[MOVE_SPRINT])
 			this.sprint();
 
-		oldUpdate.call(this, dt, map, port1, port2);
+		oldUpdate.call(this, dt, map, port1, port2, cube);
 		if (cube)
-			cube.update(dt, map, port1, port2);
+			cube.update(dt, map, port1, port2, this);
 
 		portals[0].step(dt);
 		portals[1].step(dt);
@@ -718,7 +733,7 @@ function CreatePlayerCharacter(i, map) {
     var frames = SimpleFrames(img.width, img.height, 143, 11, 13);
     var sheet = new SpriteSheet(img, frames);
 
-    var padding = null;
+    var padding = new Padding(2, 7, 2, 0);
     var stoppedR = new StillAnimation(sheet, i+8, padding);
     var stoppedL = new StillAnimation(sheet, i+8, padding, true);
     var idleR = new Animation(sheet, i+8, 3, 0.3, padding, true);
