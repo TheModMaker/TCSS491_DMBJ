@@ -157,9 +157,9 @@ function Map(map) {
 			}
 		}
 		if (DEBUG) {
-			if (map.startX === undefined)
+			if (this.startX === undefined)
 				console.log("Missing start position.");
-			if (map.endX === undefined)
+			if (this.endX === undefined)
 				console.log("Missing end position.");
 		}
 	};

@@ -416,6 +416,7 @@ function CubeCharacter(map) {
 		cube.x = map.cubeX;
 		cube.y = map.cubeY;
 	};
+	this.kill();
 }
 
 // Constructor, defines a character that responds to user input.
@@ -503,50 +504,25 @@ function PlayerCharacter(set, map, cube) {
 			}
 		}
 	}
-    function lineClip(left, top, right, bottom, x0, y0, x1, y1) {
-    	var t0 = 0;
-    	var t1 = 1;
-    	var dx = x1 - x0;
-    	var dy = y1 - y0;
-    	var p, q, r;
-
-    	for (var e = 0; e < 4; e++) {
-    		if (e == 0) {  p = -dx;    q = -(left - x0);  }
-	        if (e == 1) {  p = dx;     q =  (right - x0); }
-	        if (e == 2) {  p = -dy;    q = -(bottom - y0);}
-	        if (e == 3) {  p = dy;     q =  (top - y0);   }   
-			r = q / p;
-	        if (p == 0 && q < 0) break;//return false;   // Don't draw line at all. (parallel line outside)
-
-	        if (p < 0) {
-	            if (r > t1) break;//return false;         // Don't draw line at all.
-	            else if(r > t0) t0 = r;            // Line is clipped!
-	        } else if(p > 0) {
-	            if(r < t0) break;//return false;      // Don't draw line at all.
-	            else if(r < t1) t1 = r;         // Line is clipped!
-	        }
-    	}
-
-    	return { x0: (x0 + t0*dx), y0: (y0 + t0*dy), x1: (x0 + t1*dx), y1: (y0 + t1*dy) };
-    }
     function updateMouse() {
 		var x0 = that.x + that.width / 2;
 		var dx = mouse.rx + mouse.dx - x0;
-		var x1 = x0 + 40*dx;
+		var x1 = x0 + dx;
 		var y0 = that.y + that.height / 2;
 		var dy = mouse.ry + mouse.dy - y0;
-		var y1 = y0 + 40*dy;
+		var y1 = y0 + dy;
+		var m = dy / dx;
 		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
 			if (oldMap.isSolid(x, y)) {
-				var r = lineClip(x*BLOCK_WIDTH, y*BLOCK_WIDTH, (x+1)*BLOCK_WIDTH, (y+1)*BLOCK_WIDTH, 
-					x0, y0, x1, y1);
-
 				if (horiz) {
-					mouse.x = r.x1;
 					mouse.y = y*BLOCK_WIDTH + (!top ? BLOCK_WIDTH : 0);
+					mouse.x = (mouse.y - y0) / m + x0;
 				} else {
 					mouse.x = x*BLOCK_WIDTH + (top ? BLOCK_WIDTH : 0);
-					mouse.y = r.y0;
+					if (isFinite(m))
+						mouse.y = m*(mouse.x - x0) + y0;
+					// There is no way to get the y position if pointing up
+					// however this shouldn't happen, so ignore.
 				}
 				mouse.horiz = horiz;
 				mouse.top = top;
