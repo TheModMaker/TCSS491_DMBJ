@@ -92,6 +92,8 @@ function Character(set, start) {
 					that.kill();
 				else if (r === false)
 					that.endLevel();
+				else if (r === 0)
+					that.clearPortals();
 
 				if (r) {
 					return { x:(i * BLOCK_WIDTH), y:(j * BLOCK_WIDTH) };
@@ -426,6 +428,7 @@ function CubeCharacter(map) {
 	})();
 	Character.call(this, cube, map);
 
+	this.clearPortals = function() {};
 	this.endLevel = function() {};
 	this.kill = function() {
 		cube.x = map.cubeX;
@@ -528,7 +531,8 @@ function PlayerCharacter(set, map, cube) {
 		var y1 = y0 + dy;
 		var m = dy / dx;
 		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
-			if (oldMap.isSolid(x, y)) {
+			var r = oldMap.isSolid(x, y);
+			if (r || r === 0) {
 				if (horiz) {
 					mouse.y = y*BLOCK_WIDTH + (!top ? BLOCK_WIDTH : 0);
 					mouse.x = (mouse.y - y0) / m + x0;
@@ -552,6 +556,9 @@ function PlayerCharacter(set, map, cube) {
     };
     this.endLevel = function() {
     	ENGINE.endLevel();
+    };
+    this.clearPortals = function() {
+    	port1 = port2 = null;
     };
 
 	this.update = function(dt, map) {

@@ -13,6 +13,9 @@ var BLOCK_AIR = 0;
 // Defines the end of the map.
 var BLOCK_END_CHAR = '*';
 var BLOCK_END = 1;
+// Defines a portal-clear block.
+var BLOCK_CLEAR_CHAR = '|';
+var BLOCK_CLEAR = 1;
 // Defines the start of the map.
 var BLOCK_START_CHAR = '+';
 // Defines where a companion cube will spawn.
@@ -55,7 +58,7 @@ var BLOCK_NO_WALL_LDR = 0x7 + BLOCK_NO_WALL;
 var BLOCK_NO_WALL_ULDR = 0xF + BLOCK_NO_WALL;
 
 // Defines the characters that will kill the player.
-var BLOCK_KILL_CHAR = "~`!@$%^&()[{]}\\|;:'\",<.>/?".split("");
+var BLOCK_KILL_CHAR = "~`!@$%^&()[]{}\\;:'\",<.>/_?".split("");
 // Defines the characters for doors.
 var BLOCK_DOOR_CHAR   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 // Defines the characters for buttons.
@@ -117,6 +120,7 @@ function Map(map) {
 	this.assets[BLOCK_WALL_CHAR] = BLOCK_WALL;
 	this.assets[BLOCK_NO_WALL_CHAR] = BLOCK_NO_WALL;
 	this.assets[BLOCK_END_CHAR] = BLOCK_END;
+	this.assets[BLOCK_CLEAR_CHAR] = BLOCK_CLEAR;
 
 	var level = map.split("\n");
 	if (level[0] === "")
@@ -155,6 +159,9 @@ function Map(map) {
 				switch (c) {
 					case BLOCK_AIR_CHAR: 
 						break;
+					case BLOCK_CLEAR_CHAR:
+						i = this.assets[c];
+						break;
 					case BLOCK_WALL_CHAR:
 					case BLOCK_NO_WALL_CHAR: 
 						i = WallType(this.assets[c], level, x, y); 
@@ -174,7 +181,7 @@ function Map(map) {
 						this.cubeY = y * BLOCK_WIDTH;
 						break;
 					case BLOCK_END_CHAR:
-						i = BLOCK_END;
+						i = this.assets[c];
 						if (DEBUG && this.endX !== undefined)
 							console.log("Duplicate end position.");
 						
@@ -250,6 +257,7 @@ function Map(map) {
 
 		var c = level[y][x];
 		switch (c) {
+			case BLOCK_CLEAR_CHAR: 	return 0;
 			case BLOCK_WALL_CHAR: 	return 1;
 			case BLOCK_NO_WALL_CHAR:return 2;
 			case BLOCK_END_CHAR: 	return false;
