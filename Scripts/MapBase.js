@@ -96,7 +96,7 @@ function Map(map) {
 	};
 	function makeButton(x, y, s) {
 		var img = ASSETS["us"];
-		var frames = [new Frame(0, 318, 16, 3), new Frame(17, 318, 16, 3)];
+		var frames = [new Frame(0, 304, 16, 16), new Frame(17, 304, 16, 16)];
 		var sheet = new SpriteSheet(img, frames);
 
 		var released = new StillAnimation(sheet, 0);
@@ -104,7 +104,7 @@ function Map(map) {
 		
 		var ret = new AnimationSet(released, pressed);
 		ret.x = x*BLOCK_WIDTH;
-		ret.y = y*BLOCK_WIDTH + 14;
+		ret.y = y*BLOCK_WIDTH;
 		ret.state = s;
 		return ret;
 	};
