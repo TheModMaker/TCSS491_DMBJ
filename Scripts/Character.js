@@ -32,7 +32,8 @@ var MOVE_SPRINT = 16; // Shift
 
 // Constructor, creates a new character object.
 // - set : The animation sets for the character.
-// - start : The map that defines the start position.
+// - x : The x-position to start at.
+// - y : The y-position to start at.
 //
 // Members:
 // - function update(dt, map) : Updates the character information using the given delta-time.
@@ -41,7 +42,7 @@ var MOVE_SPRINT = 16; // Shift
 // - function moveRight() : Tells the character it should move right, must be called each update.
 // - function sprint() : Tels the character it should sprint, must be called each update.
 // - function jump() : Tels the character it should jump.
-function Character(set, start) {
+function Character(set, x, y) {
 	var stoppedR = 0;
 	var stoppedL = 1;
 	var idleR = 2;
@@ -55,9 +56,8 @@ function Character(set, start) {
 
 	set.switchTo(stoppedR);
 
-	start = start || {};
-	set.x = start.startX || 25;
-	set.y = start.startY || 25;
+	set.x = x || 25;
+	set.y = y || 25;
 
 	// Contains the velocity of the character.
 	var xVel = 0;
@@ -414,25 +414,27 @@ function HitPortal(portal1, portal2, ch, dx, dy) {
 }
 
 // Constructor, defines a companion cube character.
+// - x : The x-position to start at.
+// - y : The y-position to start at.
 //
 // Members:
 // - function update(dt, map) : Updates the character information using the given delta-time.
 // - function draw() : Draws the character on the screen.
-function CubeCharacter(map) {
+function CubeCharacter(x, y) {
 	var cube = (function() {
 		var img = ASSETS["level"];
         var frames = SimpleFrames(img.width, img.height, 64, 8, 8);
         var sheet = new SpriteSheet(img, frames);
-        var anim = new StillAnimation(sheet, 1);
+        var anim = new StillAnimation(sheet, 36);
         return new AnimationSet(anim);
 	})();
-	Character.call(this, cube, map);
+	Character.call(this, cube, x, y);
 
 	this.clearPortals = function() {};
 	this.endLevel = function() {};
 	this.kill = function() {
-		cube.x = map.cubeX;
-		cube.y = map.cubeY;
+		cube.x = x;
+		cube.y = y;
 	};
 	this.kill();
 }
@@ -445,7 +447,7 @@ function CubeCharacter(map) {
 // - function update(dt, map) : Updates the character information using the given delta-time.
 // - function draw() : Draws the character on the screen.
 function PlayerCharacter(set, map, cube) {
-	Character.call(this, set, map);
+	Character.call(this, set, map.startX, map.startY);
 
 	var portals = (function() {
 		var img = ASSETS["us"];
@@ -755,7 +757,7 @@ function CreatePlayerCharacter(i, map) {
     var fallingL = new Animation(sheet, i+45, 4, 0.1, padding, true, false, false, true);
 
     var set = new AnimationSet(stoppedR, stoppedL, idleR, idleL, runningR, runningL, jumpingR, jumpingL, fallingR, fallingL);
-    var cube = new CubeCharacter(map);
+    var cube = new CubeCharacter(map.cubeX, map.cubeY);
 
     return new PlayerCharacter(set, map, (map.cubeX && cube));
 }
