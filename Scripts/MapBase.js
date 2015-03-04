@@ -80,40 +80,43 @@ var BLOCK_WIDTH = 16;
 // - function isSolid(x, y) : Determines if the given block is solid.
 function Map(map) {
 	function makeDoor(x, y) {
-		var img = ASSETS["level"];
-		var frames = [new Frame(16, 0, 16, 32)];
+		var img = ASSETS["us"];
+		var frames = SimpleFrames(0, 0, 17, 17, 1, 0, 0, 0, 258, 11, 32);
 		var sheet = new SpriteSheet(img, frames);
 
 		var closed = new StillAnimation(sheet, 0);
-		var open = new StillAnimation(sheet, 0);
-		var opening = new StillAnimation(sheet, 0);
-		var closing = new StillAnimation(sheet, 0);
+		var open = new StillAnimation(sheet, 16);
+		var opening = new Animation(sheet, 0, 16, 0.04, null);
+		var closing = new Animation(sheet, 0, 16, 0.04, null, false, true);
 		
 		var ret = new AnimationSet(closed, open, opening, closing);
-		ret.x = x*BLOCK_WIDTH;
+		ret.x = x*BLOCK_WIDTH + 3;
 		ret.y = y*BLOCK_WIDTH;
 		return ret;
 	};
 	function makeButton(x, y, s) {
-		var img = ASSETS["level"];
-		var frames = [new Frame(16, 0, 16, 16)];
+		var img = ASSETS["us"];
+		var frames = [new Frame(0, 318, 16, 3), new Frame(17, 318, 16, 3)];
 		var sheet = new SpriteSheet(img, frames);
 
 		var released = new StillAnimation(sheet, 0);
-		var pressed = new StillAnimation(sheet, 0);
+		var pressed = new StillAnimation(sheet, 1);
 		
 		var ret = new AnimationSet(released, pressed);
 		ret.x = x*BLOCK_WIDTH;
-		ret.y = y*BLOCK_WIDTH;
+		ret.y = y*BLOCK_WIDTH + 14;
 		ret.state = s;
 		return ret;
 	};
+	function State(button, door) {
+		this.button = button;
+		this.door = door;
+		this.closed = true;
+	};
 	var states = [];
-	var doors = [];
-	var buttons = [];
 
 	this.backgroundSpeed = 1;
-	this.background = null;
+	this.background = ASSETS["background"];
 	this.backgroundMusic = null;
 
 	this.assets = [];
@@ -197,13 +200,15 @@ function Map(map) {
 									console.log("Doors must be exactly two blocks tall.")
 								}
 
-								doors.push(makeDoor(x, y-1));
+								if (states[c]) states[c].door = makeDoor(x, y-1);
+								else states[c] = new State(null, makeDoor(x, y-1));
 							} else if (y+1 >= level.length || level[y+1][x] != c) {
 								console.log("Doors must be exactly two blocks tall.")
 							}
 						} else if (BLOCK_BUTTON_CHAR.indexOf(c) != -1) {
-							buttons.push(makeButton(x, y, c.charCodeAt(0) - BLOCK_BUTTON_CHAR[0].charCodeAt(0)));
-							states[c.charCodeAt(0) - BLOCK_BUTTON_CHAR[0].charCodeAt(0)] = true;
+							c = c.toUpperCase();
+							if (states[c]) states[c].button = makeButton(x, y);
+							else states[c] = new State(makeButton(x, y));
 						} else if (DEBUG) {
 							console.log("Unknown map part '" + c + "'.");
 						}
@@ -218,8 +223,9 @@ function Map(map) {
 				console.log("Missing start position.");
 			if (this.endX === undefined)
 				console.log("Missing end position.");
-			if (buttons.length != doors.length)
-				console.log("All doors must have buttons for them.")
+			for (var x in states) 
+				if (!state[x].button || !state[x].door) 
+					console.log("Each door must have a button.");
 		}
 	};
 
@@ -234,22 +240,24 @@ function Map(map) {
 
 		CONTEXT.drawImage(canvas, dx, dy, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
 
-		for (var i = 0; i < doors.length; i++) {
-			doors[i].x -= dx;
-			doors[i].y -= dy;
-			doors[i].draw();
-			doors[i].x += dx;
-			doors[i].y += dy;
-		}
-		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].x -= dx;
-			buttons[i].y -= dy;
-			buttons[i].draw();
-			buttons[i].x += dx;
-			buttons[i].y += dy;
+		for (var i in states) {
+			function part(x) {
+				x.x -= dx;
+				x.y -= dy;
+				x.draw();
+				x.x += dx;
+				x.y += dy;
+			}
+
+			part(states[i].door);
+			part(states[i].button);
 		}
 	};
 	this.step = function(dt) {
+		for (var x in states) {
+			states[x].door.step(dt);
+			states[x].button.step(dt);
+		}
 	};
 	this.isSolid = function(x, y) {
 		if (x < 0 || y < 0 || y >= level.length || x >= level[y].length)
@@ -266,7 +274,7 @@ function Map(map) {
 			case BLOCK_AIR_CHAR: 	return undefined;
 			default:
 				if (BLOCK_BUTTON_CHAR.indexOf(c) != -1)    return undefined;
-				else if (BLOCK_DOOR_CHAR.indexOf(c) != -1) return states[c.charCodeAt(0) - BLOCK_DOOR_CHAR[0].charCodeAt(0)] ? 2 : undefined;
+				else if (BLOCK_DOOR_CHAR.indexOf(c) != -1) return states[c].closed ? 2 : undefined;
 				else 									   return null;
 		}
 	};
@@ -284,18 +292,26 @@ function Map(map) {
 
 		var objs = arguments;
 		for (var x in states) {
-			states[x] = true;
-		}
+			var state = states[x];
+			var old = state.closed;
+			state.closed = true;
 
-		for (var x in buttons) {
-			var b = buttons[x];
 			for (var i = 0; i < objs.length; i++) {
 				var o = objs[i];
-				if (o && collide(o, b)) {
-					states[b.state] = false;
+				if (o && collide(o, state.button)) {
+					state.closed = false;
 					break;
 				}
 			}
+
+			if (old && !state.closed) {
+				state.door.switchWithFrame(2); // Opening.
+				state.door.smoothSwitch(1);
+			} else if (!old && state.closed) {
+				state.door.switchWithFrame(3); // Closing.
+				state.door.smoothSwitch(0);
+			}
+			state.button.switchTo(state.closed ? 0 : 1);
 		}
 	};
 }

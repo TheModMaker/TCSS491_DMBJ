@@ -115,5 +115,6 @@ ASSETS = new AssetManager(CreateAsset
 		("level", "Images/level.png", "img")
 		("us", "Images/dmbj.png", "img")
 		("screens", "Images/screens.png", "img")
+		("background", "Images/Background.png", "img")
 		//("test", "Audio/Test.mp3", "sound")
 		.create());

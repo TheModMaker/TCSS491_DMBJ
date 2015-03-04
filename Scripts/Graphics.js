@@ -295,7 +295,7 @@ function Padding(left, top, right, bottom) {
 // - function start() : Sets the animation to playing.
 // - function stop() : Sets the animation to idle.
 function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothDir, flipHoriz, flipVert) {
-	var elapsed = 0;
+	this.elapsed = 0;
 	var running = true;
 	var firstLoop = true;
 	var oldStart = start;
@@ -308,6 +308,7 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 		if (bothDir) return 2 * count - 2;
 		else return count;
 	}
+	this.totalTime = time * frameCount();
 
 	this.width = sheet.width;
 	this.height = sheet.height;
@@ -315,7 +316,7 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 	this.draw = function(x, y, w, h, clip) {
 		if (running) {
 			// Get the current index from the time.
-			var index = Math.floor(elapsed / time);
+			var index = Math.floor(this.elapsed / time);
 			if (reverse)
 				index = (count - index - 1);
 			if (index >= count)
@@ -328,13 +329,13 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 			// Update the width/height.
 			this.width = ret.width - padding.left - padding.right;
 			this.height = ret.height - padding.bottom - padding.top;
-			return this;
 		}
+		return this;
 	};
 	this.step = function(dt) {
-		elapsed += dt;
-		if (elapsed >= time * frameCount()) {
-			elapsed = 0;
+		this.elapsed += dt;
+		if (this.elapsed >= this.totalTime) {
+			this.elapsed = 0;
 			if (!loop) 
 				running = false;
 			else if (firstLoop) {
@@ -349,13 +350,12 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 		return false;
 	};
 	this.reset = function() {
-		elapsed = 0;
+		this.elapsed = 0;
 		start = oldStart;
 		if (loop)
 			count += (loopIndex - start);
 	};
 	this.start = function() {
-		elapsed = 0;
 		running = true;
 	};
 	this.stop = function() {
@@ -380,8 +380,10 @@ function Animation(sheet, start, count, time, padding, loopIndex, reverse, bothD
 function StillAnimation(sheet, start, padding, flipHoriz, flipVert) {
 	padding = padding || new Padding();
 
-	this.width = sheet.width;
-	this.height = sheet.height;
+	this.width = sheet[start].width;
+	this.height = sheet[start].height;
+	this.elapsed = 0;
+	this.totalTime = 0;
 
 	this.draw = function(x, y, w, h, clip) {
 		// Draw the current frame.
@@ -442,6 +444,14 @@ function AnimationSet() {
 			anims[curAnim].reset();
 			anims[curAnim].start();
 		}
+	};
+	this.switchWithFrame = function(i) {
+		i = Math.min(anims.length-1, i);
+		anims[i].elapsed = anims[curAnim].totalTime - anims[curAnim].elapsed;
+
+		curAnim = i;
+		switchAnim = null;
+		anims[curAnim].start();
 	};
 	this.switchTo = function(i) {
 		curAnim = Math.min(anims.length-1, i);
