@@ -15,7 +15,7 @@ var BLOCK_END_CHAR = '*';
 var BLOCK_END = 1;
 // Defines a portal-clear block.
 var BLOCK_CLEAR_CHAR = '|';
-var BLOCK_CLEAR = 1;
+var BLOCK_CLEAR = 35;
 // Defines the start of the map.
 var BLOCK_START_CHAR = '+';
 // Defines where a companion cube will spawn.
