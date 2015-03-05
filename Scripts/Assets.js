@@ -116,5 +116,12 @@ ASSETS = new AssetManager(CreateAsset
 		("us", "Images/dmbj.png", "img")
 		("screens", "Images/screens.png", "img")
 		("background", "Images/Background.png", "img")
-		//("test", "Audio/Test.mp3", "sound")
+		("back1", "Sounds/level1.mp3", "sound")
+		("back2", "Sounds/level2.mp3", "sound")
+		("back3", "Sounds/level3.mp3", "sound")
+		("back4", "Sounds/level4.mp3", "sound")
+		("back5", "Sounds/level5.mp3", "sound")
+		("sizzle", "Sounds/sizzle.mp3", "sound")
+		("jump", "Sounds/jump.mp3", "sound")
+		("portal", "Sounds/portalsound.mp3", "sound")
 		.create());

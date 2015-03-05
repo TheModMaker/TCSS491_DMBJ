@@ -121,6 +121,8 @@ var ENGINE = new (function() {
     };
     this.killPlayer = function() {
         if (cScreen == null) {
+            ASSETS["sizzle"].audio.play();
+
             deaths++;
             cScreen = new DeathScreen(deaths);
             SOUNDS.stopAll();
@@ -175,6 +177,9 @@ var ENGINE = new (function() {
 
     var that = this;
     onAssetLoad = function() {
+        ASSETS["sizzle"].audio.volume = 0.15;
+        ASSETS["jump"].audio.volume = 0.5;
+
         MAPS.compile();
         cScreen = new TitleScreen();
 

@@ -332,6 +332,9 @@ function Character(set, x, y) {
 	};
 	this.jump = function() {
 		if (canJump) {
+			ASSETS["jump"].audio.play();
+			ASSETS["jump"].audio.currentTime = 0.25;
+
 			yVel = JUMP_SPEED;
 			set.switchTo(jumpingR + dir);
 		}
@@ -659,6 +662,8 @@ function PlayerCharacter(set, map, cube) {
 	});
 	$(document).on("mousedown.char", function(e) {
 		updateMouse();
+		ASSETS["portal"].audio.play();
+		ASSETS["portal"].audio.currentTime = 0;
 
 		var port;
 		var x = Math.floor(mouse.x / BLOCK_WIDTH) - (!mouse.top || mouse.horiz ? 0 : 1);
