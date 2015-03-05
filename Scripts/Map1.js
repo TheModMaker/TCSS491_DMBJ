@@ -43,7 +43,7 @@
      map.assets['~'] = 34;
      //map.background = ASSETS["level"];
      //map.backgroundSpeed = 0.5;
-     //map.backgroundMusic = ASSETS["test"];
+     map.backgroundMusic = ASSETS["back1"];
 
 	MAPS.push(map);
 })();
