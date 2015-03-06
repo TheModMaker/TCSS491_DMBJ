@@ -118,6 +118,7 @@ var ENGINE = new (function() {
     this.resume = function() {
         SOUNDS.resume();
 
+        ch.attach();
         cScreen.detach();
         cScreen = null;
     };
@@ -126,6 +127,7 @@ var ENGINE = new (function() {
             ASSETS["sizzle"].audio.play();
 
             deaths++;
+            ch.detach();
             cScreen = new DeathScreen(deaths);
             SOUNDS.stopAll();
         }
@@ -142,6 +144,7 @@ var ENGINE = new (function() {
     this.endLevel = function() {
         SOUNDS.stopAll();
 
+        ch.detach();
         cScreen = new LevelScreen(MAPS.current !== MAPS.length - 1);
     };
     this.nextLevel = function() {
@@ -205,6 +208,7 @@ var ENGINE = new (function() {
             if (ch && !cScreen && e.which === "P".charCodeAt(0)) {
                 cScreen = new PauseScreen();
                 SOUNDS.stopAll();
+                ch.detach();
             }
             if (ch && !cScreen && e.which === "L".charCodeAt(0)) {
                 that.endLevel();

@@ -644,97 +644,103 @@ function PlayerCharacter(set, map, cube) {
 	};
 
 	// Detach old key listeners.
-	$(document).off(".char");
+	this.detach = function() {
+		$(document).off(".char");
+	};
+	this.detach();
 
 	// Attach key listeners.
-	$(document).on("keydown.char", function(e) {
-        keys[e.which] = (keys[e.which] || 0) + 1;
-        mouse.shift = e.shiftKey;
+	this.attach = function() {
+		$(document).on("keydown.char", function(e) {
+	        keys[e.which] = (keys[e.which] || 0) + 1;
+	        mouse.shift = e.shiftKey;
 
-        return false; // http://stackoverflow.com/questions/1357118/event-preventdefault-vs-return-false
-	});
-	$(document).on("keyup.char", function(e) {
-        keys[e.which] = 0;
-        mouse.shift = e.shiftKey;
+	        return false; // http://stackoverflow.com/questions/1357118/event-preventdefault-vs-return-false
+		});
+		$(document).on("keyup.char", function(e) {
+	        keys[e.which] = 0;
+	        mouse.shift = e.shiftKey;
 
-        return false;
-	});
-	$(document).on("mousedown.char", function(e) {
-		function valid(x, y, dx, dy) {
-			return (oldMap.getBlock(x, y) === undefined &&
-					(oldMap.getBlock(x - dx, y + dy) === 1 || oldMap.getBlock(x - dx, y + dy) === 3));
-		}
-		updateMouse();
-		ASSETS["portal"].audio.play();
-		ASSETS["portal"].audio.currentTime = 0;
-
-		var port;
-		var x = Math.floor(mouse.x / BLOCK_WIDTH) - (!mouse.top || mouse.horiz ? 0 : 1);
-		var y = Math.floor(mouse.y / BLOCK_WIDTH) - (mouse.top || !mouse.horiz ? 0 : 1);
-		var d = (mouse.top ? -1 : 1);
-		if (mouse.horiz) {
-			if (valid(x, y, 0, d)) {
-				if (!valid(x - 1, y, 0, d)) {d
-					// If the block to the left isn't solid, move to the right.
-					if (valid(x + 1, y, 0, d))
-						port = new Portal((x + 1) * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
-				} else if (!valid(x + 1, y, 0, d)) {
-					// If the block to the right isn't solid, move to the left.
-					port = new Portal(x * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
-				} else {
-					port = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
-				}
+	        return false;
+		});
+		$(document).on("mousedown.char", function(e) {
+			function valid(x, y, dx, dy) {
+				return (oldMap.getBlock(x, y) === undefined &&
+						(oldMap.getBlock(x - dx, y + dy) === 1 || oldMap.getBlock(x - dx, y + dy) === 3));
 			}
-		} else {
-			if (valid(x, y, d, 0)) {
-				if (!valid(x, y - 1, d, 0)) {
-					// Id the block above isn't solid, move down.
-					if (valid(x, y + 1, d, 0))
-						port = new Portal(mouse.x, (y+1)*BLOCK_WIDTH, mouse.horiz, mouse.top);
-				} else if (!valid(x, y + 1, d, 0)) {
-					// If the block below isn't solid, move up.
-					port = new Portal(mouse.x, y*BLOCK_WIDTH, mouse.horiz, mouse.top);
-				} else {
-					port = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
-				}
-			}
-		}
+			updateMouse();
+			ASSETS["portal"].audio.play();
+			ASSETS["portal"].audio.currentTime = 0;
 
-		// Check for portal-portal collision.
-		if (port != null) {
-			var other;
-			if (e.shiftKey && port1 != null) {
-				other = port1;
-			} else if (!e.shiftKey && port2 != null) {
-				other = port2;
-			}
-
-			if (other != null && other.horiz === port.horiz) {
-				if (port.horiz) {
-					if (Math.abs(port.x - other.x) < CHARACTER_SIZE && port.y == other.y) {
-						port = null;
+			var port;
+			var x = Math.floor(mouse.x / BLOCK_WIDTH) - (!mouse.top || mouse.horiz ? 0 : 1);
+			var y = Math.floor(mouse.y / BLOCK_WIDTH) - (mouse.top || !mouse.horiz ? 0 : 1);
+			var d = (mouse.top ? -1 : 1);
+			if (mouse.horiz) {
+				if (valid(x, y, 0, d)) {
+					if (!valid(x - 1, y, 0, d)) {d
+						// If the block to the left isn't solid, move to the right.
+						if (valid(x + 1, y, 0, d))
+							port = new Portal((x + 1) * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
+					} else if (!valid(x + 1, y, 0, d)) {
+						// If the block to the right isn't solid, move to the left.
+						port = new Portal(x * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
+					} else {
+						port = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
 					}
-				} else {
-					if (Math.abs(port.y - other.y) < CHARACTER_SIZE && port.x == other.x) {
-						port = null;
+				}
+			} else {
+				if (valid(x, y, d, 0)) {
+					if (!valid(x, y - 1, d, 0)) {
+						// Id the block above isn't solid, move down.
+						if (valid(x, y + 1, d, 0))
+							port = new Portal(mouse.x, (y+1)*BLOCK_WIDTH, mouse.horiz, mouse.top);
+					} else if (!valid(x, y + 1, d, 0)) {
+						// If the block below isn't solid, move up.
+						port = new Portal(mouse.x, y*BLOCK_WIDTH, mouse.horiz, mouse.top);
+					} else {
+						port = new Portal(mouse.x, mouse.y, mouse.horiz, mouse.top);
 					}
 				}
 			}
-		}
 
-		if (port) {
-			if (e.shiftKey)
-				port2 = port;
-			else
-				port1 = port;
-		}
-	});
-	$(document).on("mousemove.char", function(e) {
-		var temp = $("canvas").offset();
-		mouse.rx = (e.pageX - temp.left) / SCALE;
-		mouse.ry = (e.pageY - temp.top) / SCALE;
-		updateMouse();
-	});
+			// Check for portal-portal collision.
+			if (port != null) {
+				var other;
+				if (e.shiftKey && port1 != null) {
+					other = port1;
+				} else if (!e.shiftKey && port2 != null) {
+					other = port2;
+				}
+
+				if (other != null && other.horiz === port.horiz) {
+					if (port.horiz) {
+						if (Math.abs(port.x - other.x) < CHARACTER_SIZE && port.y == other.y) {
+							port = null;
+						}
+					} else {
+						if (Math.abs(port.y - other.y) < CHARACTER_SIZE && port.x == other.x) {
+							port = null;
+						}
+					}
+				}
+			}
+
+			if (port) {
+				if (e.shiftKey)
+					port2 = port;
+				else
+					port1 = port;
+			}
+		});
+		$(document).on("mousemove.char", function(e) {
+			var temp = $("canvas").offset();
+			mouse.rx = (e.pageX - temp.left) / SCALE;
+			mouse.ry = (e.pageY - temp.top) / SCALE;
+			updateMouse();
+		});
+	};
+	this.attach();
 }
 
 // Creates a new PlayerCharacter of the given index.

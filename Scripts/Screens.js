@@ -6,6 +6,10 @@
 // Use  Dependencies - jQuery, Graphics
 //
 
+var ENTER_KEY = 13;
+var DOWN_KEY = 40;
+var UP_KEY = 38;
+
 // Constructor, base class for menu items.
 // - start : The y-position to start drawing items.
 // - choices : An array of choices, indicies.
@@ -15,7 +19,7 @@ function MenuScreen(start, choices, call) {
 	var frames = ComplexFrames(0, 0, 512, 129)
 				(0, 130, 194, 57)(197, 130, 194, 57).create();
 	this.sheet = new SpriteSheet(img, frames);
-	var current = -1;
+	var current = 0;
 	var over = false;
 	var screens = this;
 
@@ -26,6 +30,7 @@ function MenuScreen(start, choices, call) {
 		x -= temp.left;
 		y -= temp.top;
 
+		var old = over;
 		over = false;
 		var t = start;
 		for (var i = 0; i < choices.length; i++) {
@@ -37,6 +42,9 @@ function MenuScreen(start, choices, call) {
 			}
 			t += c.height;
 		}
+
+		if (old && !over)
+			current = -1;
 	}
 
 	// Add event handlers
@@ -51,9 +59,21 @@ function MenuScreen(start, choices, call) {
 			call(current);
 	});
 	$(document).on("keydown.screen", function(e) {
-		if (e.which === 13 && current != -1) {
+		if (e.which === ENTER_KEY && current != -1) {
 			call(current);
+		} else if (e.which === DOWN_KEY) {
+			if (current === -1 || current === choices.length - 1)
+				current = 0;
+			else 
+				current++;
+		} else if (e.which === UP_KEY) {
+			if (current === -1 || current === 0)
+				current = choices.length - 1;
+			else 
+				current--;
 		}
+
+		return false;
 	});
 
 	this.draw = function() {
