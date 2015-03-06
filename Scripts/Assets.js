@@ -121,6 +121,7 @@ ASSETS = new AssetManager(CreateAsset
 		("back3", "Sounds/level3.mp3", "sound")
 		("back4", "Sounds/level4.mp3", "sound")
 		("back5", "Sounds/level5.mp3", "sound")
+		("back6", "Sounds/level6.mp3", "sound")
 		("sizzle", "Sounds/sizzle.mp3", "sound")
 		("jump", "Sounds/jump.mp3", "sound")
 		("portal", "Sounds/portalsound.mp3", "sound")
