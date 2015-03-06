@@ -664,6 +664,8 @@ function PlayerCharacter(set, map, cube) {
 	        return false;
 		});
 		$(document).on("mousedown.char", function(e) {
+			if (e.button !== 0) return;
+			
 			function valid(x, y, dx, dy) {
 				return (oldMap.getBlock(x, y) === undefined &&
 						(oldMap.getBlock(x - dx, y + dy) === 1 || oldMap.getBlock(x - dx, y + dy) === 3));
