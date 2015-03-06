@@ -40,7 +40,7 @@ var SOUNDS = new (function() {
 
 	this.play = function(sound) {
 		sounds.push(sound.audio);
-		sound.audio.volume = 0.2;
+		sound.audio.volume = 0.15;
 		sound.audio.currentTime = 0;
 		sound.audio.loop = true;
 		sound.audio.play();

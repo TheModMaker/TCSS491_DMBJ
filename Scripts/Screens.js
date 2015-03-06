@@ -111,6 +111,12 @@ function TitleScreen() {
 	MenuScreen.call(this, 215, ["Dain", "Mike", "Brandon", "Jacob"], function(i) {
 		ENGINE.start(i);
 	});
+	var sheet = (function() {
+		var img = ASSETS["title"];
+		var frames = SimpleFrames(img.width, img.height, 4, 4, 1, 2);
+		var sheet = new SpriteSheet(img, frames);
+		return sheet;
+	})();
 	var oldDraw = this.draw;
 
 	this.draw = function() {
@@ -126,6 +132,18 @@ function TitleScreen() {
 		CONTEXT.font = "36px serif";
 		CONTEXT.textAlign = "center";
 		CONTEXT.fillText("Select Character", w / 2, h);
+		CONTEXT.restore();
+
+		var scale = 0.4;
+		var x = CANVAS.width/SCALE/scale - sheet.width;
+		var y = CANVAS.height/SCALE/scale - sheet.height;
+
+		CONTEXT.save();
+		CONTEXT.scale(scale, scale);
+		sheet[1].draw(0, 0);
+		sheet[0].draw(0, y);
+		sheet[2].draw(x, 0);
+		sheet[3].draw(x, y);
 		CONTEXT.restore();
 
 		oldDraw.call(this);

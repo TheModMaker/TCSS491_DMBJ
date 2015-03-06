@@ -671,8 +671,6 @@ function PlayerCharacter(set, map, cube) {
 						(oldMap.getBlock(x - dx, y + dy) === 1 || oldMap.getBlock(x - dx, y + dy) === 3));
 			}
 			updateMouse();
-			ASSETS["portal"].audio.play();
-			ASSETS["portal"].audio.currentTime = 0;
 
 			var port;
 			var x = Math.floor(mouse.x / BLOCK_WIDTH) - (!mouse.top || mouse.horiz ? 0 : 1);
@@ -729,6 +727,9 @@ function PlayerCharacter(set, map, cube) {
 			}
 
 			if (port) {
+				ASSETS["portal"].audio.play();
+				ASSETS["portal"].audio.currentTime = 0;
+				
 				if (e.shiftKey)
 					port2 = port;
 				else

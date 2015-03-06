@@ -116,6 +116,7 @@ ASSETS = new AssetManager(CreateAsset
 		("us", "Images/dmbj.png", "img")
 		("screens", "Images/screens.png", "img")
 		("background", "Images/Background.png", "img")
+		("title", "Images/PortalTitle.png", "img")
 		("back1", "Sounds/level1.mp3", "sound")
 		("back2", "Sounds/level2.mp3", "sound")
 		("back3", "Sounds/level3.mp3", "sound")
