@@ -6,6 +6,8 @@
 // Use  Dependencies - Assets, Graphics, MapBase
 //
 
+var BACKGROUND_SPEED = 0.5;
+
 // Contains the main game engine.
 //
 // Members:
@@ -153,6 +155,13 @@ var ENGINE = new (function() {
     };
 
     this.draw = function() {
+        var back = ASSETS["background"].img
+        for (var x = -map.x * BACKGROUND_SPEED; x < CANVAS.width; x += back.width) {
+            for (var y = -map.y * BACKGROUND_SPEED; y < CANVAS.width; y += back.height) {
+                CONTEXT.drawImage(back, x, y);
+            }
+        }
+
         if (ch) {
             MAPS.draw(map.x, map.y);
             ch.draw(map.x, map.y);

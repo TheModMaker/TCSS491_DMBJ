@@ -59,19 +59,21 @@ function MenuScreen(start, choices, call) {
 	this.draw = function() {
 		var w = CANVAS.width / SCALE;
 		var h = start;
+
+		CONTEXT.save();
+		CONTEXT.fillStyle = "#D8D8D8";
+		CONTEXT.font = "42px serif";
+		CONTEXT.textAlign = "center";
+
 		for (var i = 0; i < choices.length; i++) {
 			var frame = this.sheet[1 + (current === i)];
 			frame.draw((w - frame.width) / 2, h);
 
-			CONTEXT.save();
-			CONTEXT.fillStyle = "#D8D8D8";
-			CONTEXT.font = "42px serif";
-			CONTEXT.textAlign = "center";
 			CONTEXT.fillText(choices[i], w / 2, h + frame.height / 2 + 10);
-			CONTEXT.restore();
 
 			h += frame.height;
 		}
+		CONTEXT.restore();
 
 		$("canvas").css("cursor", (over ? "pointer" : "auto"));
 	};
@@ -100,6 +102,7 @@ function TitleScreen() {
 		h += frame.height;
 
 		CONTEXT.save();
+		CONTEXT.fillStyle = "#D8D8D8";
 		CONTEXT.font = "36px serif";
 		CONTEXT.textAlign = "center";
 		CONTEXT.fillText("Select Character", w / 2, h);

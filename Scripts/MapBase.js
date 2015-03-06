@@ -230,14 +230,6 @@ function Map(map) {
 	};
 
 	this.draw = function(dx, dy) {
-		if (this.background) {
-			for (var x = -dx * this.backgroundSpeed; x < CANVAS.width; x += this.background.width) {
-				for (var y = -dy * this.backgroundSpeed; y < CANVAS.width; y += this.background.height) {
-					CONTEXT.drawImage(this.background.img, x, y);
-				}
-			}
-		}
-
 		CONTEXT.drawImage(canvas, dx, dy, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
 
 		for (var i in states) {
