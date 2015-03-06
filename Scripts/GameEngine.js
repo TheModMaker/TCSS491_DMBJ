@@ -156,9 +156,9 @@ var ENGINE = new (function() {
 
     this.draw = function() {
         var back = ASSETS["background"].img
-        for (var x = -map.x * BACKGROUND_SPEED; x < CANVAS.width; x += back.width) {
-            for (var y = -map.y * BACKGROUND_SPEED; y < CANVAS.width; y += back.height) {
-                CONTEXT.drawImage(back, x, y);
+        for (var x = -map.x * BACKGROUND_SPEED; x < CANVAS.width; x += back.width-1) {
+            for (var y = -map.y * BACKGROUND_SPEED; y < CANVAS.width; y += back.height-1) {
+                CONTEXT.drawImage(back, x-1, y-1);
             }
         }
 
