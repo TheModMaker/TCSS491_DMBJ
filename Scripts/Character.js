@@ -283,8 +283,8 @@ function Character(set, x, y) {
 			var oldy = set.y;
 
 			set.clip = clip;
-			set.x = (x === undefined ? set.x : x) - dx;
-			set.y = (y === undefined ? set.y : y) - dy;
+			set.x = (x === undefined ? set.x : x);
+			set.y = (y === undefined ? set.y : y);
 
 			set.draw();
 
@@ -591,18 +591,17 @@ function PlayerCharacter(set, map, cube) {
 	};
 	this.draw = function(dx, dy) {
 		function DrawPortal(port, asset) {
-			var x, y;
 			CONTEXT.save();
 			if (port.horiz) {
-				x = port.x - asset.width / 2;
-				y = port.y;// + (port.top ? 0 : BLOCK_WIDTH);
+				var x = port.x - asset.width / 2;
+				var y = port.y;
 
-				CONTEXT.translate(x - dx, y - dy);
+				CONTEXT.translate(x, y);
 			} else {
-				x = port.x;
-				y = port.y - asset.width / 2;
+				var x = port.x;
+				var y = port.y - asset.width / 2;
 
-				CONTEXT.translate(x - dx, y - dy);
+				CONTEXT.translate(x, y);
 				CONTEXT.rotate(90 * Math.PI / 180);
 			}
 			if (!port.top) {
@@ -628,17 +627,17 @@ function PlayerCharacter(set, map, cube) {
 			CONTEXT.strokeStyle = "#E17A74";
 		else
 			CONTEXT.strokeStyle = "#00CCFF";
-	    CONTEXT.dashedLine(this.x + this.width / 2 - dx, this.y + this.height / 2 - dy, mouse.x - dx, mouse.y - dy, 3);
+	    CONTEXT.dashedLine(this.x + this.width / 2, this.y + this.height / 2, mouse.x, mouse.y, 3);
 	    CONTEXT.stroke();
 	    // Draw portal circle
 	    CONTEXT.beginPath();
-    	CONTEXT.arc(mouse.x - dx, mouse.y - dy, 3, 0, 2 * Math.PI, false);
+    	CONTEXT.arc(mouse.x, mouse.y, 3, 0, 2 * Math.PI, false);
     	CONTEXT.stroke();
     	CONTEXT.restore();
 
-		oldDraw.call(this, dx, dy, port1, port2);
+		oldDraw.call(this, 0, 0, port1, port2);
 		if (cube)
-			cube.draw(dx, dy, port1, port2);
+			cube.draw(0, 0, port1, port2);
 
 		mouse.dx = dx;
 		mouse.dy = dy;

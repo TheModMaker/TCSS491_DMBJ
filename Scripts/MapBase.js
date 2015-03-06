@@ -229,16 +229,12 @@ function Map(map) {
 		}
 	};
 
-	this.draw = function(dx, dy) {
-		CONTEXT.drawImage(canvas, dx, dy, CANVAS.width, CANVAS.height, 0, 0, CANVAS.width, CANVAS.height);
+	this.draw = function() {
+		CONTEXT.drawImage(canvas, 0, 0);
 
 		for (var i in states) {
 			function part(x) {
-				x.x -= dx;
-				x.y -= dy;
 				x.draw();
-				x.x += dx;
-				x.y += dy;
 			}
 
 			part(states[i].door);
@@ -331,8 +327,8 @@ var MAPS = (function() {
 		this[this.current].reset();
 	};
 
-	maps.draw = function(x, y) {
-		this[this.current].draw(x, y);
+	maps.draw = function() {
+		this[this.current].draw();
 	};
 	maps.step = function(dt) {
 		this[this.current].step(dt);

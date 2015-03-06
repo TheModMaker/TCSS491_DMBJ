@@ -163,8 +163,13 @@ var ENGINE = new (function() {
         }
 
         if (ch) {
-            MAPS.draw(map.x, map.y);
+            CONTEXT.save();
+            CONTEXT.translate(-map.x, -map.y);
+
+            MAPS.draw();
             ch.draw(map.x, map.y);
+
+            CONTEXT.restore();
         }
         if (cScreen) cScreen.draw();
     };
