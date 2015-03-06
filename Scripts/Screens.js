@@ -19,7 +19,7 @@ function MenuScreen(start, choices, call) {
 	var frames = ComplexFrames(0, 0, 512, 129)
 				(0, 130, 194, 57)(197, 130, 194, 57).create();
 	this.sheet = new SpriteSheet(img, frames);
-	var current = 0;
+	this.current = 0;
 	var over = false;
 	var screens = this;
 
@@ -37,14 +37,14 @@ function MenuScreen(start, choices, call) {
 			var c = screens.sheet[1];
 			var left = (CANVAS.width / SCALE - c.width) / 2;
 			if (y >= t && y < (t + c.width) && x >= left && x < (left + c.width)) {
-				current = i;
+				screens.current = i;
 				over = true;
 			}
 			t += c.height;
 		}
 
 		if (old && !over)
-			current = -1;
+			screens.current = -1;
 	}
 
 	// Add event handlers
@@ -53,24 +53,24 @@ function MenuScreen(start, choices, call) {
 		update(e.pageX, e.pageY);
 	});
 	$(document).on("mouseup.screen", function(e) {
-		current = -1;
+		screens.current = -1;
 		update(e.pageX, e.pageY);
-		if (current != -1)
-			call(current);
+		if (screens.current != -1)
+			call(screens.current);
 	});
 	$(document).on("keydown.screen", function(e) {
-		if (e.which === ENTER_KEY && current != -1) {
-			call(current);
+		if (e.which === ENTER_KEY && screens.current != -1) {
+			call(screens.current);
 		} else if (e.which === DOWN_KEY) {
-			if (current === -1 || current === choices.length - 1)
-				current = 0;
+			if (screens.current === -1 || screens.current === choices.length - 1)
+				screens.current = 0;
 			else 
-				current++;
+				screens.current++;
 		} else if (e.which === UP_KEY) {
-			if (current === -1 || current === 0)
-				current = choices.length - 1;
+			if (screens.current === -1 || screens.current === 0)
+				screens.current = choices.length - 1;
 			else 
-				current--;
+				screens.current--;
 		}
 
 		return false;
@@ -86,7 +86,7 @@ function MenuScreen(start, choices, call) {
 		CONTEXT.textAlign = "center";
 
 		for (var i = 0; i < choices.length; i++) {
-			var frame = this.sheet[1 + (current === i)];
+			var frame = this.sheet[1 + (screens.current === i)];
 			frame.draw((w - frame.width) / 2, h);
 
 			CONTEXT.fillText(choices[i], w / 2, h + frame.height / 2 + 10);
@@ -135,15 +135,24 @@ function TitleScreen() {
 		CONTEXT.restore();
 
 		var scale = 0.4;
+		var bigScale = 1.3;
 		var x = CANVAS.width/SCALE/scale - sheet.width;
 		var y = CANVAS.height/SCALE/scale - sheet.height;
+		function drawBig(i, x, y) {
+			CONTEXT.save();
+			CONTEXT.scale(bigScale, bigScale);
+			var x2 = CANVAS.width/SCALE/scale/bigScale - sheet.width;
+			var y2 = CANVAS.height/SCALE/scale/bigScale - sheet.height;
+			sheet[i].draw(x ? x2 : 0, y ? y2 : 0);
+			CONTEXT.restore();
+		}
 
 		CONTEXT.save();
 		CONTEXT.scale(scale, scale);
-		sheet[1].draw(0, 0);
-		sheet[0].draw(0, y);
-		sheet[2].draw(x, 0);
-		sheet[3].draw(x, y);
+		if (this.current === 0) drawBig(1, 0, 0); else sheet[1].draw(0, 0);
+		if (this.current === 1) drawBig(2, x, 0); else sheet[2].draw(x, 0);
+		if (this.current === 2) drawBig(0, 0, y); else sheet[0].draw(0, y);
+		if (this.current === 3) drawBig(3, x, y); else sheet[3].draw(x, y);
 		CONTEXT.restore();
 
 		oldDraw.call(this);
