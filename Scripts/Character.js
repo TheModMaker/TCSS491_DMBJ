@@ -80,7 +80,7 @@ function Character(set, x, y) {
 	// Determines whether there is a solid block in the region (in pixels).
 	function hitInRegion(map, minX, minY, maxX, maxY) {
 		minX = Math.floor(minX / BLOCK_WIDTH);
-		maxX = Math.floor(maxX / BLOCK_WIDTH);
+		maxX = Math.floor((maxX +5) / BLOCK_WIDTH);
 
 		minY = Math.floor(minY / BLOCK_WIDTH);
 		maxY = Math.floor(maxY / BLOCK_WIDTH);
