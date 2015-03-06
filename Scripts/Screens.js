@@ -113,7 +113,7 @@ function TitleScreen() {
 	});
 	var sheet = (function() {
 		var img = ASSETS["title"];
-		var frames = SimpleFrames(img.width, img.height, 4, 4, 1, 2);
+		var frames = SimpleFrames(img.width, img.height, 1, 1, 1);
 		var sheet = new SpriteSheet(img, frames);
 		return sheet;
 	})();
@@ -134,25 +134,11 @@ function TitleScreen() {
 		CONTEXT.fillText("Select Character", w / 2, h);
 		CONTEXT.restore();
 
-		var scale = 0.4;
-		var bigScale = 1.3;
-		var x = CANVAS.width/SCALE/scale - sheet.width;
-		var y = CANVAS.height/SCALE/scale - sheet.height;
-		function drawBig(i, x, y) {
-			CONTEXT.save();
-			CONTEXT.scale(bigScale, bigScale);
-			var x2 = CANVAS.width/SCALE/scale/bigScale - sheet.width;
-			var y2 = CANVAS.height/SCALE/scale/bigScale - sheet.height;
-			sheet[i].draw(x ? x2 : 0, y ? y2 : 0);
-			CONTEXT.restore();
-		}
 
+		var scale = 0.35;
 		CONTEXT.save();
 		CONTEXT.scale(scale, scale);
-		if (this.current === 0) drawBig(1, 0, 0); else sheet[1].draw(0, 0);
-		if (this.current === 1) drawBig(2, x, 0); else sheet[2].draw(x, 0);
-		if (this.current === 2) drawBig(0, 0, y); else sheet[0].draw(0, y);
-		if (this.current === 3) drawBig(3, x, y); else sheet[3].draw(x, y);
+		sheet[0].draw(0, 0);
 		CONTEXT.restore();
 
 		oldDraw.call(this);
