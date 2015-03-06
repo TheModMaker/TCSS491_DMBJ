@@ -87,16 +87,16 @@ function Character(set, x, y) {
 
 		for (var i = minX; i <= maxX; i++) {
 			for (var j = minY; j <= maxY; j++) {
-				var r = map.isSolid(i, j);
-				if (r === null)
+				var r = map.getBlock(i, j);
+				if (r === 5)
 					that.kill();
-				else if (r === false)
+				else if (r === 3)
 					that.endLevel();
-				else if (r === 0)
+				else if (r === 2)
 					that.clearPortals();
 
-				if (r) {
-					return { x:(i * BLOCK_WIDTH), y:(j * BLOCK_WIDTH) };
+				if (!r) {
+					return { x: (i * BLOCK_WIDTH), y: (j * BLOCK_WIDTH) };
 				}
 			}
 		}
@@ -536,8 +536,8 @@ function PlayerCharacter(set, map, cube) {
 		var y1 = y0 + dy;
 		var m = dy / dx;
 		rayTrace(x0, y0, x1, y1, function(x, y, horiz, top) {
-			var r = oldMap.isSolid(x, y);
-			if (r || r === 0) {
+			var r = oldMap.getBlock(x, y);
+			if (!r || r === 2) {
 				if (horiz) {
 					mouse.y = y*BLOCK_WIDTH + (!top ? BLOCK_WIDTH : 0);
 					mouse.x = (mouse.y - y0) / m + x0;
@@ -660,6 +660,10 @@ function PlayerCharacter(set, map, cube) {
         return false;
 	});
 	$(document).on("mousedown.char", function(e) {
+		function valid(x, y, dx, dy) {
+			return (oldMap.getBlock(x, y) === undefined &&
+					(oldMap.getBlock(x - dx, y + dy) === 1 || oldMap.getBlock(x - dx, y + dy) === 3));
+		}
 		updateMouse();
 		ASSETS["portal"].audio.play();
 		ASSETS["portal"].audio.currentTime = 0;
@@ -669,12 +673,12 @@ function PlayerCharacter(set, map, cube) {
 		var y = Math.floor(mouse.y / BLOCK_WIDTH) - (mouse.top || !mouse.horiz ? 0 : 1);
 		var d = (mouse.top ? -1 : 1);
 		if (mouse.horiz) {
-			if (oldMap.isSolid(x, y) === 1 && !oldMap.isSolid(x, y + d)) {
-				if (!oldMap.isSolid(x - 1, y) || oldMap.isSolid(x - 1, y) === 2 || oldMap.isSolid(x - 1, y + d)) {
+			if (valid(x, y, 0, d)) {
+				if (!valid(x - 1, y, 0, d)) {d
 					// If the block to the left isn't solid, move to the right.
-					if (oldMap.isSolid(x + 1, y) === 1 && !oldMap.isSolid(x + 1, y + d))
+					if (valid(x + 1, y, 0, d))
 						port = new Portal((x + 1) * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
-				} else if (!oldMap.isSolid(x + 1, y) || oldMap.isSolid(x + 1, y) === 2 || oldMap.isSolid(x + 1, y + d)) {
+				} else if (!valid(x + 1, y, 0, d)) {
 					// If the block to the right isn't solid, move to the left.
 					port = new Portal(x * BLOCK_WIDTH, mouse.y, mouse.horiz, mouse.top);
 				} else {
@@ -682,12 +686,12 @@ function PlayerCharacter(set, map, cube) {
 				}
 			}
 		} else {
-			if (oldMap.isSolid(x, y) === 1 && !oldMap.isSolid(x - d, y)) {
-				if (!oldMap.isSolid(x, y - 1) || oldMap.isSolid(x, y - 1) === 2 || oldMap.isSolid(x - d, y - 1)) {
+			if (valid(x, y, d, 0)) {
+				if (!valid(x, y - 1, d, 0)) {
 					// Id the block above isn't solid, move down.
-					if (oldMap.isSolid(x, y + 1) === 1 && !oldMap.isSolid(x - d, y + 1))
+					if (valid(x, y + 1, d, 0))
 						port = new Portal(mouse.x, (y+1)*BLOCK_WIDTH, mouse.horiz, mouse.top);
-				} else if (!oldMap.isSolid(x, y + 1) || oldMap.isSolid(x, y + 1) === 2 || oldMap.isSolid(x - d, y + 1)) {
+				} else if (!valid(x, y + 1, d, 0)) {
 					// If the block below isn't solid, move up.
 					port = new Portal(mouse.x, y*BLOCK_WIDTH, mouse.horiz, mouse.top);
 				} else {

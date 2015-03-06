@@ -247,23 +247,32 @@ function Map(map) {
 			states[x].button.step(dt);
 		}
 	};
-	this.isSolid = function(x, y) {
+	// Falsy : Solid-like
+	// 		undefined - Solid Block
+	// 		null - No-Portal Block
+	// Truthy : Air-like
+	// 		1 - Air/Start/CubeSpawn
+	// 		2 - Portal Clear
+	//		3 - End
+	//		4 - Button/Door
+	//		5 - Kill
+	this.getBlock = function(x, y) {
 		if (x < 0 || y < 0 || y >= level.length || x >= level[y].length)
-			return 2;
+			return null;
 
 		var c = level[y][x];
 		switch (c) {
-			case BLOCK_CLEAR_CHAR: 	return 0;
-			case BLOCK_WALL_CHAR: 	return 1;
-			case BLOCK_NO_WALL_CHAR:return 2;
-			case BLOCK_END_CHAR: 	return false;
-			case BLOCK_CUBE_CHAR: 	return undefined;
-			case BLOCK_START_CHAR: 	return undefined;
-			case BLOCK_AIR_CHAR: 	return undefined;
+			case BLOCK_WALL_CHAR: 	return undefined;
+			case BLOCK_NO_WALL_CHAR:return null;
+			case BLOCK_CUBE_CHAR: 	return 1;
+			case BLOCK_START_CHAR: 	return 1;
+			case BLOCK_AIR_CHAR: 	return 1;
+			case BLOCK_CLEAR_CHAR: 	return 2;
+			case BLOCK_END_CHAR: 	return 3;
 			default:
-				if (BLOCK_BUTTON_CHAR.indexOf(c) != -1)    return undefined;
-				else if (BLOCK_DOOR_CHAR.indexOf(c) != -1) return states[c].closed ? 2 : undefined;
-				else 									   return null;
+				if (BLOCK_BUTTON_CHAR.indexOf(c) != -1)    return 4;
+				else if (BLOCK_DOOR_CHAR.indexOf(c) != -1) return states[c].closed ? null : 4;
+				else 									   return 5;
 		}
 	};
 	this.reset = function() {
