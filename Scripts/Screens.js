@@ -131,7 +131,7 @@ function TitleScreen() {
 		CONTEXT.fillStyle = "#D8D8D8";
 		CONTEXT.font = "36px serif";
 		CONTEXT.textAlign = "center";
-		CONTEXT.fillText("Select Character", w / 2, h);
+		CONTEXT.fillText("Select Character", w / 2, h+30);
 		CONTEXT.restore();
 
 
